@@ -1,6 +1,6 @@
 .square{
     background: #ffffff;
-    border: 1px solid black;
+    /* border: 1px solid black; */
     float: left;
     font-size: 24px;
     font-weight: bold;
@@ -13,9 +13,6 @@
     width: 34px;
 }
 
-/* table{
-    border-collapse: collapse;
-} */
 
 th, td{
     width: 30px;
