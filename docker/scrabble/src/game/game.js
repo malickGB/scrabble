@@ -38,10 +38,11 @@ class Game extends React.Component{
     
     constructor(props){
         super(props);
+        var lettersBag = this.getLetters();
         this.state = 
         {
             array: Array(205).fill(null),
-            lettersDict: this.getLetters()
+            lettersBag: lettersBag
         }
     }
 
@@ -50,7 +51,7 @@ class Game extends React.Component{
         return (
             <Board 
                 squares = {this.state.array}
-                lettersBag = {this.state.lettersDict}
+                lettersBag = {this.state.lettersBag}
             />
         );
     }

@@ -1,14 +1,23 @@
 import React from 'react'
 
-function Letter(props) {
-    return (
-        <p value={getValue(props.letter)}>{props.letter}</p>
-    )
-}
-
-function getValue(letter){
+class Letter extends React.Component {
+    constructor(props){
+        super(props);
+        this.state = {
+            letter: this.props.letter , 
+            value: this.getValue(this.state.letter)
+        }
+    };
+    
+    render(){
+        return (
+            <p data-value={this.state.value}>{this.props.letter}</p>
+        )
+    }
+    
+    getValue(letter) {
     var value = 0;
-    switch(letter){
+    switch (letter) {
         case 'A':
             value = 1;
             break;
@@ -92,5 +101,6 @@ function getValue(letter){
             break;
     }
     return value;
+}
 }
 export default Letter

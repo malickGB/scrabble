@@ -2,9 +2,10 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 import Board from './board/board';
+import Game from './game/game';
 
 ReactDOM.render(
-    <Board></Board>,
+    <Game/>,
     document.getElementById('root')
 );
 
