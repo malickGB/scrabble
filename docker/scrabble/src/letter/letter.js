@@ -3,18 +3,17 @@ import React from 'react'
 class Letter extends React.Component {
     constructor(props){
         super(props);
-        this.state = {
-            letter: this.props.letter , 
-            value: this.getValue(this.state.letter)
-        }
     };
     
     render(){
         return (
-            <p data-value={this.state.value}>{this.props.letter}</p>
+            <button 
+                id = {this.props.id}
+            >
+            {this.props.letter}
+            </button>
         )
     }
-    
     getValue(letter) {
     var value = 0;
     switch (letter) {

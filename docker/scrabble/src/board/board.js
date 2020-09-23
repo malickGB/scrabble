@@ -11,12 +11,15 @@ class Board extends React.Component {
         this.state = {
             player1Letters : [],
             player2Letters : [],
+            selectedLetter : null,
+            selectedSquare : null
         }
 
         this.btn1Click = this.btn1Click.bind(this);
         this.btn2Click = this.btn2Click.bind(this);
     }
 
+    // FIXME : Pick other letter if the one selected is not existing
     getRandomLetters() {
         //get keys whose value > 0  (contained in the bag)
         var bag = this.bagLetters;
@@ -26,20 +29,26 @@ class Board extends React.Component {
         for (var i = 0; i < 7 && i < Object.keys(remainingLetters).length; i++) {
             var randIndex = Math.floor(Math.random() * remainingLetters.length);
             var letter = remainingLetters[randIndex];
-            var key = bag[letter];
-            res.push([letter, key]);
-            // Change amout of remaining letters
-            bag[letter] -= 1;
+            if (bag[letter] > 0)
+            {
+                var key = bag[letter];
+                res.push([letter, key]);
+                // Change amout of remaining letters
+                bag[letter] -= 1;
+            }
         }
         this.bagLetters = bag
         return res;
     }
 
 
+
     // Displays 1 square
     renderSquare(id, bonus_letter = 1, bonus_word = 1) {
         const onClickEmptyHandler = (data) => {
-            console.log(data)
+            if (this.state.selectedLetter != null){
+                this.props.squares[id] = this.stateselectedLetter;
+            }
         }
     
         return (
@@ -52,6 +61,9 @@ class Board extends React.Component {
             />
         );
     }
+
+
+    // FIXME: Add handler when click on letter, insert letter into array, re-render
 
     btn1Click = () => {
        this.setState({
@@ -367,14 +379,20 @@ class Board extends React.Component {
                 <ul>
                     {this.state.player1Letters.map((value) =>{
                         return  <li key={"player1-"+this.bagLetters[value[0]]+value}>
-                                    <button id={"player1-" + this.bagLetters[value[0]] + value}>{value[0]}</button>
+                                    <Letter
+                                        id = {"player1-" + this.bagLetters[value[0]] + value}
+                                        letter = {value[0]}
+                                    />
                                 </li>
                     })}
                 </ul>
                 <ul>
                     {this.state.player2Letters.map((value) => {
                         return <li key={"player2-" + this.bagLetters[value[0]] + value}>
-                                    <button id={"player2-" + this.bagLetters[value[0]] + value}>{value[0]}</button>
+                                    <Letter
+                                        id = {"player2-" + this.bagLetters[value[0]] + value}
+                                        letter = {value[0]}
+                                    />
                                 </li>
                     })}
                 </ul>
