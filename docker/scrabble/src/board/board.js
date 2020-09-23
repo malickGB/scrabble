@@ -4,19 +4,106 @@ import './board.css'
 import Square from '../square/square'
 
 class Board extends React.Component {
-    bagLetters = {...this.props.lettersBag};
+    bagLetters = { ...this.props.lettersBag };
 
     constructor(props) {
         super(props);
         this.state = {
             squares: this.props.squares,
-            player1Letters : [],
-            player2Letters : [],
-            selectedLetter : null,
+            player1Letters: [],
+            player2Letters: [],
+            selectedLetter: null,
         }
 
     }
 
+    getValue(letter) {
+        var value = 0;
+        switch (letter) {
+            case 'A':
+                value = 1;
+                break;
+            case 'B':
+                value = 3;
+                break;
+            case 'C':
+                value = 4;
+                break;
+            case 'D':
+                value = 2;
+                break;
+            case 'E':
+                value = 1;
+                break;
+            case 'F':
+                value = 4;
+                break;
+            case 'G':
+                value = 2;
+                break;
+            case 'H':
+                value = 4;
+                break;
+            case 'I':
+                value = 1;
+                break;
+            case 'J':
+                value = 8;
+                break;
+            case 'K':
+                value = 10;
+                break;
+            case 'L':
+                value = 1;
+                break;
+            case 'M':
+                value = 2;
+                break;
+            case 'N':
+                value = 1;
+                break;
+            case 'O':
+                value = 1;
+                break;
+            case 'P':
+                value = 3;
+                break;
+            case 'Q':
+                value = 8;
+                break;
+            case 'R':
+                value = 1;
+                break;
+            case 'S':
+                value = 1;
+                break;
+            case 'T':
+                value = 1;
+                break;
+            case 'U':
+                value = 1;
+                break;
+            case 'V':
+                value = 4;
+                break;
+            case 'W':
+                value = 10;
+                break;
+            case 'X':
+                value = 10;
+                break;
+            case 'Y':
+                value = 10;
+                break;
+            case 'Z':
+                value = 10;
+                break;
+            default:
+                value = 0;
+                break;
+        }
+        return value;
+    }
 
     getRandomLetters(currentLetters) {
         //get keys whose value > 0  (contained in the bag)
@@ -28,13 +115,12 @@ class Board extends React.Component {
         var remainingLetters = Object.keys(bag)
             .filter((key) => bag[key] > 0)
         var res = [];
-        for (;Object.keys(remainingLetters).length > 0 && res.length < 7;) {
+        for (; Object.keys(remainingLetters).length > 0 && res.length < 7;) {
             var randIndex = Math.floor(Math.random() * remainingLetters.length);
             var letter = remainingLetters[randIndex];
-            if (bag[letter] > 0)
-            {
+            if (bag[letter] > 0) {
                 var remaining = bag[letter];
-                res.push([letter, remaining - 1 ]);
+                res.push([letter, remaining - 1]);
                 // Change amout of remaining letters
                 var remainingLetters = Object.keys(bag)
                     .filter((key) => bag[key] >= 0)
@@ -46,12 +132,10 @@ class Board extends React.Component {
     }
 
     playerHas(playerLetters, selectedLetter) {
-       
-        for(var i = 0; i < playerLetters.length; i++)
-        {
-            if(playerLetters[i][0] === selectedLetter[0])
-            {
-                if (playerLetters[i][1] === selectedLetter[1]){
+
+        for (var i = 0; i < playerLetters.length; i++) {
+            if (playerLetters[i][0] === selectedLetter[0]) {
+                if (playerLetters[i][1] === selectedLetter[1]) {
                     return i;
                 }
             }
@@ -63,19 +147,19 @@ class Board extends React.Component {
      * puts letter into the board
      * TODO : Remove from player's hand
      */
-    onClickEmptyHandler = (id, data) => {
+    onClickEmptyHandler = (id) => {
         // remove from player's hand
         // if(this.state.player1Letters.includes())
         if (this.state.selectedLetter != null) {
             var squares = this.state.squares.slice();
-            squares[id] = this.state.selectedLetter;
+            squares[id] = [this.state.selectedLetter[1], this.getValue(this.state.selectedLetter[1])];
             var letter_id = this.state.selectedLetter[0];
             letter_id = letter_id.split('-');
             this.setState({
                 squares: squares,
                 selectedLetter: null,
             })
-            
+
             var letter_id_number = letter_id[letter_id.length - 1];
             var playercopy = this.state.player1Letters.slice();
             var removeFromPlayer1 = true
@@ -83,23 +167,25 @@ class Board extends React.Component {
             var index = this.playerHas(playercopy, selected);
 
             // Check who has the letter & delete from his letters
-            if (index < 0){
+            if (index < 0) {
                 playercopy = this.state.player2Letters.slice();
                 removeFromPlayer1 = false;
                 index = this.playerHas(playercopy, selected);
             }
-            playercopy.splice(index,1);
+            playercopy.splice(index, 1);
 
-            if (removeFromPlayer1){
+            if (removeFromPlayer1) {
                 this.setState({
                     player1Letters: playercopy
                 })
             }
-            else{
+            else {
                 this.setState({
                     player2Letters: playercopy
                 })
             }
+
+            this.renderSquare(id)
         }
     }
 
@@ -107,11 +193,11 @@ class Board extends React.Component {
     renderSquare(id, bonus_letter = 1, bonus_word = 1) {
         return (
             <Square
-                id = {id}
-                letter = {this.state.squares[id][1]}
-                bonus_letter = {bonus_letter}
-                bonus_word = {bonus_word}
-                onClickEmpty = {this.onClickEmptyHandler}
+                id={id}
+                letter={this.state.squares[id][0]}
+                bonus_letter={bonus_letter}
+                bonus_word={bonus_word}
+                onClickEmpty={this.onClickEmptyHandler}
             />
         );
     }
@@ -119,9 +205,9 @@ class Board extends React.Component {
 
     // Get new Letters
     btn1Click = () => {
-        var currentLetters = this.state.player1Letters.slice(); 
+        var currentLetters = this.state.player1Letters.slice();
         this.setState({
-           player1Letters : this.getRandomLetters(currentLetters)
+            player1Letters: this.getRandomLetters(currentLetters)
         });
     }
 
@@ -437,32 +523,31 @@ class Board extends React.Component {
                     </tbody>
                 </table>
                 <ul>
-                    {this.state.player1Letters.map((value) =>{
+                    {this.state.player1Letters.map((value) => {
 
-                        return  <li key={"player1-"+this.bagLetters[value[0]]+value}>
-                                    <Letter
-                                    id={"player1-" + value[0] + '-' + value[1] }
-                                        letter={value[0]}
-                                        onClickLetter={this.onClickLetterHandler}
-                                    />
-                                </li>
+                        return <li key={"player1-" + this.bagLetters[value[0]] + value}>
+                            <Letter
+                                id={"player1-" + value[0] + '-' + value[1]}
+                                letter={value[0]}
+                                onClickLetter={this.onClickLetterHandler}
+                            />
+                        </li>
                     })}
                 </ul>
                 <ul>
                     {this.state.player2Letters.map((value) => {
                         return <li key={"player2-" + this.bagLetters[value[0]] + value}>
-                                    <Letter
-                                    id={"player2-" + value[0] + '-' + value[1]  }
-                                        letter={value[0]}
-                                        onClickLetter={this.onClickLetterHandler}
-                                    />
-                                </li>
+                            <Letter
+                                id={"player2-" + value[0] + '-' + value[1]}
+                                letter={value[0]}
+                                onClickLetter={this.onClickLetterHandler}
+                            />
+                        </li>
                     })}
                 </ul>
                 <button onClick={this.btn1Click.bind(this)}>refresh 1</button>
-
                 <button onClick={this.btn2Click.bind(this)}>refresh 2</button>
-            </div>       
+            </div>
         )
     }
 }

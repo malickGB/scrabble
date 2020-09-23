@@ -1,4 +1,5 @@
 import React from 'react'
+import Letter from '../letter/letter';
 
 
 class Square extends React.Component {
@@ -6,10 +7,11 @@ class Square extends React.Component {
         super(props);
         this.state = {
             id : this.props.id,
-            bonus: this.props.bonus
+            bonus_letter: this.props.bonus_letter,
+            bonus_word: this.props.bonus_word,
         }
     }
-
+    
     handleclick = () =>{
         this.setState(() =>{
             if (this.props.onClickEmpty){
@@ -27,8 +29,6 @@ class Square extends React.Component {
             </td>
         );
     }
-
-
 }
 
 export default Square
