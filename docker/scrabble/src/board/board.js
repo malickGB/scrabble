@@ -17,13 +17,14 @@ class Board extends React.Component {
 
     }
 
+
     getRandomLetters(currentLetters) {
         //get keys whose value > 0  (contained in the bag)
         var bag = this.bagLetters;
         currentLetters.forEach(element => {
             bag[element[0]] += 1;
         });
-
+        // Put back player's letters in the bag
         var remainingLetters = Object.keys(bag)
             .filter((key) => bag[key] > 0)
         var res = [];
@@ -33,7 +34,7 @@ class Board extends React.Component {
             if (bag[letter] > 0)
             {
                 var remaining = bag[letter];
-                res.push([letter, remaining]);
+                res.push([letter, remaining - 1 ]);
                 // Change amout of remaining letters
                 var remainingLetters = Object.keys(bag)
                     .filter((key) => bag[key] >= 0)
@@ -41,8 +42,21 @@ class Board extends React.Component {
             }
         }
         this.bagLetters = bag
-        console.log(bag);
         return res;
+    }
+
+    playerHas(playerLetters, selectedLetter) {
+       
+        for(var i = 0; i < playerLetters.length; i++)
+        {
+            if(playerLetters[i][0] === selectedLetter[0])
+            {
+                if (playerLetters[i][1] === selectedLetter[1]){
+                    return i;
+                }
+            }
+        }
+        return -1;
     }
 
     /**
@@ -50,13 +64,42 @@ class Board extends React.Component {
      * TODO : Remove from player's hand
      */
     onClickEmptyHandler = (id, data) => {
+        // remove from player's hand
+        // if(this.state.player1Letters.includes())
         if (this.state.selectedLetter != null) {
             var squares = this.state.squares.slice();
             squares[id] = this.state.selectedLetter;
+            var letter_id = this.state.selectedLetter[0];
+            letter_id = letter_id.split('-');
             this.setState({
                 squares: squares,
                 selectedLetter: null,
             })
+            
+            var letter_id_number = letter_id[letter_id.length - 1];
+            var playercopy = this.state.player1Letters.slice();
+            var removeFromPlayer1 = true
+            var selected = [this.state.selectedLetter[1], parseInt(letter_id_number)] // parse id to match with player's letters
+            var index = this.playerHas(playercopy, selected);
+
+            // Check who has the letter & delete from his letters
+            if (index < 0){
+                playercopy = this.state.player2Letters.slice();
+                removeFromPlayer1 = false;
+                index = this.playerHas(playercopy, selected);
+            }
+            playercopy.splice(index,1);
+
+            if (removeFromPlayer1){
+                this.setState({
+                    player1Letters: playercopy
+                })
+            }
+            else{
+                this.setState({
+                    player2Letters: playercopy
+                })
+            }
         }
     }
 
@@ -89,13 +132,13 @@ class Board extends React.Component {
         });
     }
 
-    render() {
-        const onClickLetterHandler = (id, letter) =>{
-            this.setState({
-                selectedLetter: [id,letter]
-            })
-        }
+    onClickLetterHandler = (id, letter) => {
+        this.setState({
+            selectedLetter: [id, letter]
+        })
+    }
 
+    render() {
         return (
             <div className="game-board">
                 <table>
@@ -395,11 +438,12 @@ class Board extends React.Component {
                 </table>
                 <ul>
                     {this.state.player1Letters.map((value) =>{
+
                         return  <li key={"player1-"+this.bagLetters[value[0]]+value}>
                                     <Letter
-                                        id={"player1-" + this.bagLetters[value[0]] + value}
+                                    id={"player1-" + value[0] + '-' + value[1] }
                                         letter={value[0]}
-                                        onClickLetter={onClickLetterHandler}
+                                        onClickLetter={this.onClickLetterHandler}
                                     />
                                 </li>
                     })}
@@ -408,9 +452,9 @@ class Board extends React.Component {
                     {this.state.player2Letters.map((value) => {
                         return <li key={"player2-" + this.bagLetters[value[0]] + value}>
                                     <Letter
-                                        id={"player2-" + this.bagLetters[value[0]] + value}
+                                    id={"player2-" + value[0] + '-' + value[1]  }
                                         letter={value[0]}
-                                        onClickLetter={onClickLetterHandler}
+                                        onClickLetter={this.onClickLetterHandler}
                                     />
                                 </li>
                     })}
