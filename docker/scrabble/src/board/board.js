@@ -4,7 +4,7 @@ import './board.css'
 import Square from '../square/square'
 
 class Board extends React.Component {
-    bagLetters = this.props.lettersBag;
+    bagLetters = {...this.props.lettersBag};
 
     constructor(props) {
         super(props);
@@ -17,25 +17,31 @@ class Board extends React.Component {
 
     }
 
-    // FIXME : Pick other letter if the one selected is not existing
-    getRandomLetters() {
+    getRandomLetters(currentLetters) {
         //get keys whose value > 0  (contained in the bag)
         var bag = this.bagLetters;
+        currentLetters.forEach(element => {
+            bag[element[0]] += 1;
+        });
+
         var remainingLetters = Object.keys(bag)
-            .filter((key) => bag[key] >= 0)
+            .filter((key) => bag[key] > 0)
         var res = [];
-        for (var i = 0; i < 7 && i < Object.keys(remainingLetters).length; i++) {
+        for (;Object.keys(remainingLetters).length > 0 && res.length < 7;) {
             var randIndex = Math.floor(Math.random() * remainingLetters.length);
             var letter = remainingLetters[randIndex];
             if (bag[letter] > 0)
             {
-                var key = bag[letter];
-                res.push([letter, key]);
+                var remaining = bag[letter];
+                res.push([letter, remaining]);
                 // Change amout of remaining letters
+                var remainingLetters = Object.keys(bag)
+                    .filter((key) => bag[key] >= 0)
                 bag[letter] -= 1;
             }
         }
         this.bagLetters = bag
+        console.log(bag);
         return res;
     }
 
@@ -70,14 +76,16 @@ class Board extends React.Component {
 
     // Get new Letters
     btn1Click = () => {
-       this.setState({
-           player1Letters : this.getRandomLetters()
-       });
+        var currentLetters = this.state.player1Letters.slice(); 
+        this.setState({
+           player1Letters : this.getRandomLetters(currentLetters)
+        });
     }
 
     btn2Click = () => {
+        var currentLetters = this.state.player2Letters.slice();
         this.setState({
-            player2Letters: this.getRandomLetters()
+            player2Letters: this.getRandomLetters(currentLetters)
         });
     }
 
