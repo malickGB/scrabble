@@ -9,14 +9,12 @@ class Board extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
+            squares: this.props.squares,
             player1Letters : [],
             player2Letters : [],
             selectedLetter : null,
-            selectedSquare : null
         }
 
-        this.btn1Click = this.btn1Click.bind(this);
-        this.btn2Click = this.btn2Click.bind(this);
     }
 
     // FIXME : Pick other letter if the one selected is not existing
@@ -41,30 +39,36 @@ class Board extends React.Component {
         return res;
     }
 
-
-
-    // Displays 1 square
-    renderSquare(id, bonus_letter = 1, bonus_word = 1) {
-        const onClickEmptyHandler = (data) => {
-            if (this.state.selectedLetter != null){
-                this.props.squares[id] = this.stateselectedLetter;
-            }
+    /**
+     * puts letter into the board
+     * TODO : Remove from player's hand
+     */
+    onClickEmptyHandler = (id, data) => {
+        if (this.state.selectedLetter != null) {
+            var squares = this.state.squares.slice();
+            squares[id] = this.state.selectedLetter;
+            this.setState({
+                squares: squares,
+                selectedLetter: null,
+            })
         }
-    
+    }
+
+    // Displays square
+    renderSquare(id, bonus_letter = 1, bonus_word = 1) {
         return (
             <Square
                 id = {id}
-                letter = {this.props.squares[id]}
+                letter = {this.state.squares[id][1]}
                 bonus_letter = {bonus_letter}
                 bonus_word = {bonus_word}
-                onClickEmpty = {onClickEmptyHandler}
+                onClickEmpty = {this.onClickEmptyHandler}
             />
         );
     }
 
 
-    // FIXME: Add handler when click on letter, insert letter into array, re-render
-
+    // Get new Letters
     btn1Click = () => {
        this.setState({
            player1Letters : this.getRandomLetters()
@@ -72,13 +76,18 @@ class Board extends React.Component {
     }
 
     btn2Click = () => {
-        var tmp = this.getRandomLetters()
         this.setState({
-            player2Letters: tmp
+            player2Letters: this.getRandomLetters()
         });
     }
 
     render() {
+        const onClickLetterHandler = (id, letter) =>{
+            this.setState({
+                selectedLetter: [id,letter]
+            })
+        }
+
         return (
             <div className="game-board">
                 <table>
@@ -380,8 +389,9 @@ class Board extends React.Component {
                     {this.state.player1Letters.map((value) =>{
                         return  <li key={"player1-"+this.bagLetters[value[0]]+value}>
                                     <Letter
-                                        id = {"player1-" + this.bagLetters[value[0]] + value}
-                                        letter = {value[0]}
+                                        id={"player1-" + this.bagLetters[value[0]] + value}
+                                        letter={value[0]}
+                                        onClickLetter={onClickLetterHandler}
                                     />
                                 </li>
                     })}
@@ -390,15 +400,16 @@ class Board extends React.Component {
                     {this.state.player2Letters.map((value) => {
                         return <li key={"player2-" + this.bagLetters[value[0]] + value}>
                                     <Letter
-                                        id = {"player2-" + this.bagLetters[value[0]] + value}
-                                        letter = {value[0]}
+                                        id={"player2-" + this.bagLetters[value[0]] + value}
+                                        letter={value[0]}
+                                        onClickLetter={onClickLetterHandler}
                                     />
                                 </li>
                     })}
                 </ul>
                 <button onClick={this.btn1Click.bind(this)}>refresh 1</button>
 
-                <button onClick={this.btn2Click}>refresh 2</button>
+                <button onClick={this.btn2Click.bind(this)}>refresh 2</button>
             </div>       
         )
     }
