@@ -7,16 +7,19 @@ import Square from '../square/square'
 /**
  * TODO:
  *      - Get availables tile to play                   [X]
+ *          - Play horizontallly                        [X]
+ *          - Play vertically                           [X]
+ *          - Reset turn                                [X]
  *      - Add validation button to end turn             [ ]
- *      - Check turn, know if middle only available
- *      - Count total points for newly created word     [ ]
- *      - Get newly created word                        [ ]
+ *      - Check turn, know if middle only available     [X]
  *      - Save state before playing:                    [ ]
  *          - If cancel                                 [x]
  *          - in case not valid word                    [ ]
  * 
  *
  *  ... Implement rules                                 [ ]
+ *      - Count total points for newly created word     [ ]
+ *      - Get newly created word                        [ ]
  */
 class Board extends React.Component {
     bagLetters = { ...this.props.lettersBag };
@@ -162,12 +165,47 @@ class Board extends React.Component {
     }
 
     isEmpty = () => {
-        for(var i = 0; i < this.state.squares.length; i++)
-        {
-            if(this.state.squares[i][0] != null)
+        for (var i = 0; i < this.state.squares.length; i++) {
+            if (this.state.squares[i][0] != null)
                 return false;
         }
         return true;
+    }
+
+    getNextCoordinates = (squares, backup) => {
+        var top = backup[backup.length - 1][2] - 15;
+        if (typeof squares[top] == 'undefined' || squares[top][0] != null) {
+            while (typeof squares[top] != 'undefined' && squares[top][0] != null) {
+                top -= 15;
+            }
+            if (top < 0)
+                top = null;
+        }
+        var bot = backup[backup.length - 1][2] + 15;
+        if (typeof squares[bot] == 'undefined' || squares[bot][0] != null) {
+            while (typeof squares[bot] != 'undefined' && squares[bot][0] != null) {
+                bot += 15;
+            }
+            if (bot > 224)
+                bot = null;
+        }
+        var left = backup[backup.length - 1][2] - 1;
+        if (typeof squares[left] == 'undefined' || squares[left][0] != null || left % 15 == 14) {
+            while (typeof squares[left] != 'undefined' && squares[left][0] != null) {
+                left -= 1;
+            }
+            if (left < 0 || (left % 15) == 14)
+                left = null;
+        }
+        var right = backup[backup.length - 1][2] + 1;
+        if (typeof squares[right] == 'undefined' || squares[right][0] != null || right % 15 == 0) {
+            while (typeof squares[right] != 'undefined' && squares[right][0] != null) {
+                right += 1;
+            }
+            if ((right % 15) == 0)
+                right = null;
+        }
+        return [top,bot,left, right];
     }
 
     getValidSquares = () => {
@@ -176,14 +214,14 @@ class Board extends React.Component {
             return
         }
 
+        // If player has canceled his first move, reset to middle square only available
         var canceledFirstMove = true;
         Object.keys(this.state.validSquares).forEach((key) => {
             if (this.state.validSquares[key] != null)
                 canceledFirstMove = false;
         })
 
-        if (canceledFirstMove && this.isEmpty())
-        {
+        if (canceledFirstMove && this.isEmpty()) {
             this.setState({
                 validSquares: { 'top': null, 'bot': null, 'left': null, 'right': null, 'first': 112 }
             });
@@ -192,93 +230,53 @@ class Board extends React.Component {
 
         var validSquares = { 'top': null, 'bot': null, 'left': null, 'right': null, 'first': null };
         var squares = this.state.squares.slice();
-        var backup = this.state.backup.slice(); 
+        var backup = this.state.backup.slice();
         // Player starts playing, get all available squares
-        if (backup == []){
+        if (backup == []) {
             for (var i = 0; i < squares.length; i++) {
                 if (squares[i][0] != null) {
                     var top = i - 15;
                     var bot = i + 15;
                     var left = i - 1;
                     var right = i + 1;
-                    if (typeof squares[top] != 'undefined' && squares[top][0] == null) 
+                    if (typeof squares[top] != 'undefined' && squares[top][0] == null)
                         validSquares['top'] = top;
                     if (typeof squares[bot] != 'undefined' && squares[bot][0] == null)
-                            validSquares['bot'] = bot;
+                        validSquares['bot'] = bot;
                     if (typeof squares[left] != 'undefined' && squares[left][0] == null)
-                        validSquares['left'] = left ;
+                        validSquares['left'] = left;
                     if (typeof squares[right] != 'undefined' && squares[right][0] == null)
                         validSquares['right'] = right;
                 }
             }
         }
-        else if (backup.length > 0){
+        else if (backup.length > 0) {
             // Player has played already, get coordinates from last played square
-            console.log(backup.length)
-            var top = backup[backup.length - 1][2] - 15;
-            if (typeof squares[top] == 'undefined' || squares[top][0] != null)
-            {
-                while (typeof squares[top] != 'undefined' && squares[top][0] != null)
-                {
-                    top -= 15;
+            var newCoordinates = this.getNextCoordinates(squares,backup);
+            var top = newCoordinates[0];
+            var bot =  newCoordinates[1];
+            var left = newCoordinates[2];
+            var right = newCoordinates[3];
+            if (backup.length > 1) {
+                var axis = backup[backup.length - 1][2] - backup[backup.length - 2][2]
+                //playing horizontally
+                if (Math.abs(axis) < 15) {
+                    validSquares['top'] = null;
+                    validSquares['bot'] = null;
+                    validSquares['left'] = left;
+                    validSquares['right'] = right;
                 }
-                if(top < 0)
-                    top = null;
-            }
-            var bot = backup[backup.length - 1][2] + 15;
-            if (typeof squares[bot] == 'undefined' || squares[bot][0] != null)
-            {
-                while (typeof squares[bot] != 'undefined' && squares[bot][0] != null) {
-                    bot += 15;
+                // Playing vertically
+                else {
+                    validSquares['top'] = top;
+                    validSquares['bot'] = bot;
+                    validSquares['left'] = null;
+                    validSquares['right'] = null;
                 }
-                if (bot > 224)
-                    bot = null;
             }
-            var left = backup[backup.length - 1][2] - 1;
-            if (typeof squares[left] == 'undefined' || squares[left][0] != null || left % 15 == 14)
-            {
-                while (typeof squares[left] != 'undefined' && squares[left][0] != null) {
-                    left -= 1;
-                }
-                if (left < 0 || (left % 15) == 14)
-                    left = null;
-            }
-            var right = backup[backup.length - 1][2] + 1;
-            if (typeof squares[right] == 'undefined' || squares[right][0] != null || right % 15 == 0)
-            {
-                while (typeof squares[right] != 'undefined' && squares[right][0] != null) {
-                    right += 1;
-                }
-                if ((right% 15) == 0)
-                    right = null;
-            }
-            //first move
-            if (backup[backup.length - 1][2] == 112){
+            else {
+                // Played only 1 time, don't know which direction to play
                 validSquares = { 'top': top, 'bot': bot, 'left': left, 'right': right, 'first': null };
-            }
-            else{
-                // Filter to Play only on same axis
-                if(backup.length > 1){
-                    var axis = backup[backup.length - 1][2] - backup[backup.length - 2][2]
-                    //playing horizontally
-                    if (Math.abs(axis) < 15)
-                    {
-                        validSquares['top'] = null;
-                        validSquares['bot'] = null;
-                        validSquares['left'] = left;
-                        validSquares['right'] = right;
-                    }
-                    // Playing vertically
-                    else{
-                        validSquares['top'] = top;
-                        validSquares['bot'] = bot;
-                        validSquares['left'] = null;
-                        validSquares['right'] = null;
-                    }
-                }
-                else{
-                    validSquares = { 'top': top, 'bot': bot, 'left': left, 'right': right, 'first': null };
-                }
             }
         }
         this.setState({
@@ -295,7 +293,7 @@ class Board extends React.Component {
         // if(this.state.player1Letters.includes())
         var nextMoveLegal = false;
         Object.keys(this.state.validSquares).forEach((key) => {
-            if(id == this.state.validSquares[key])
+            if (id == this.state.validSquares[key])
                 nextMoveLegal = true;
         })
         if (this.state.selectedLetter != null && nextMoveLegal == true) {
@@ -351,7 +349,6 @@ class Board extends React.Component {
             />
         );
     }
-
 
     // Get new Letters
     btn1Click = () => {
