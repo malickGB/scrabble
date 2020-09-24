@@ -12,14 +12,15 @@ import Square from '../square/square'
  *          - Reset turn                                [X]
  *      - Add validation button to end turn             [ ]
  *      - Check turn, know if middle only available     [X]
- *      - Save state before playing:                    [ ]
+ *      - Save state before playing:                    [X]
  *          - If cancel                                 [x]
- *          - in case not valid word                    [ ]
+ *          
  * 
  *
  *  ... Implement rules                                 [ ]
  *      - Count total points for newly created word     [ ]
  *      - Get newly created word                        [ ]
+ *      - in case not valid word , cancel input         [ ]
  */
 class Board extends React.Component {
     bagLetters = { ...this.props.lettersBag };
@@ -34,10 +35,15 @@ class Board extends React.Component {
             backup: [],
             player1Turn: true,
             validSquares: { 'top': null, 'bot': null, 'left': null, 'right': null, 'first': 112 },
+            allAvailableSquares: []
         }
 
     }
 
+    /**
+     * Returns value of the given letter
+     * @param {String} letter 
+     */
     getValue(letter) {
         var value = 0;
         switch (letter) {
@@ -126,6 +132,11 @@ class Board extends React.Component {
         return value;
     }
 
+    /**
+     * Gives player a new set of letters
+     * Put his letters back to the set
+     * @param {Array} currentLetters 
+     */
     getRandomLetters(currentLetters = []) {
         //get keys whose value > 0  (contained in the bag)
         var bag = this.bagLetters;
@@ -164,6 +175,9 @@ class Board extends React.Component {
         return -1;
     }
 
+    /**
+     * Returns true if the board is empty
+     */
     isEmpty = () => {
         for (var i = 0; i < this.state.squares.length; i++) {
             if (this.state.squares[i][0] != null)
@@ -172,6 +186,9 @@ class Board extends React.Component {
         return true;
     }
 
+    /**
+     * Returns availables squares depending on the last one played
+     */
     getNextCoordinates = (squares, backup) => {
         var top = backup[backup.length - 1][2] - 15;
         if (typeof squares[top] == 'undefined' || squares[top][0] != null) {
@@ -232,7 +249,8 @@ class Board extends React.Component {
         var squares = this.state.squares.slice();
         var backup = this.state.backup.slice();
         // Player starts playing, get all available squares
-        if (backup == []) {
+        if (this.state.backup.length == 0) {
+            var allAvailableSquares = [];
             for (var i = 0; i < squares.length; i++) {
                 if (squares[i][0] != null) {
                     var top = i - 15;
@@ -240,15 +258,20 @@ class Board extends React.Component {
                     var left = i - 1;
                     var right = i + 1;
                     if (typeof squares[top] != 'undefined' && squares[top][0] == null)
-                        validSquares['top'] = top;
+                        allAvailableSquares.push(top);
                     if (typeof squares[bot] != 'undefined' && squares[bot][0] == null)
-                        validSquares['bot'] = bot;
+                        allAvailableSquares.push(bot);
                     if (typeof squares[left] != 'undefined' && squares[left][0] == null)
-                        validSquares['left'] = left;
+                        allAvailableSquares.push(left);
                     if (typeof squares[right] != 'undefined' && squares[right][0] == null)
-                        validSquares['right'] = right;
+                        allAvailableSquares.push(right);   
                 }
             }
+            this.setState({
+                allAvailableSquares: allAvailableSquares,
+                validSquares: { 'top': null, 'bot': null, 'left': null, 'right': null, 'first': null }
+            });
+            return;
         }
         else if (backup.length > 0) {
             // Player has played already, get coordinates from last played square
@@ -296,6 +319,8 @@ class Board extends React.Component {
             if (id == this.state.validSquares[key])
                 nextMoveLegal = true;
         })
+        if(this.state.allAvailableSquares.includes(id))
+            nextMoveLegal = true
         if (this.state.selectedLetter != null && nextMoveLegal == true) {
             var squares = this.state.squares.slice();
             var backup = this.state.backup.slice();
@@ -307,7 +332,8 @@ class Board extends React.Component {
             this.setState({
                 squares: squares,
                 selectedLetter: null,
-                backup: backup
+                backup: backup,
+                allAvailableSquares: []
             })
             var playercopy = this.state.player1Letters.slice();
             var removeFromPlayer1 = true
@@ -322,6 +348,7 @@ class Board extends React.Component {
             }
             playercopy.splice(index, 1);
 
+            // Re render letters list
             if (removeFromPlayer1) {
                 this.setState({
                     player1Letters: playercopy
@@ -332,7 +359,6 @@ class Board extends React.Component {
                     player2Letters: playercopy
                 })
             }
-
             this.renderSquare(id);
         }
     }
@@ -352,17 +378,23 @@ class Board extends React.Component {
 
     // Get new Letters
     btn1Click = () => {
-        var currentLetters = this.state.player1Letters.slice();
-        this.setState({
-            player1Letters: this.getRandomLetters(currentLetters)
-        });
+        if(this.state.player1Turn)
+        {
+            var currentLetters = this.state.player1Letters.slice();
+            this.setState({
+                player1Letters: this.getRandomLetters(currentLetters)
+            });
+        }
     }
 
     btn2Click = () => {
-        var currentLetters = this.state.player2Letters.slice();
-        this.setState({
-            player2Letters: this.getRandomLetters(currentLetters)
-        });
+        if(!this.state.player1Turn)
+        {
+            var currentLetters = this.state.player2Letters.slice();
+            this.setState({
+                player2Letters: this.getRandomLetters(currentLetters)
+            });
+        }   
     }
 
     onClickLetterHandler = (id, letter) => {
@@ -405,10 +437,21 @@ class Board extends React.Component {
         }
     }
 
+    // ADD verification
+    onClickEndTurn = () =>{
+        this.setState({
+            player1Turn : !this.state.player1Turn,
+            selectedLetter: null,
+            backup: [],
+            validSquares: { 'top': null, 'bot': null, 'left': null, 'right': null, 'first': null }
+        })
+    }
+
+
     render() {
         return (
             <div className="game-board">
-                <table>
+                    <table>
                     <thead>
                         {/* 15*15 board */}
                         <tr>
@@ -729,6 +772,7 @@ class Board extends React.Component {
                 <button onClick={this.btn1Click.bind(this)}>refresh 1</button>
                 <button onClick={this.btn2Click.bind(this)}>refresh 2</button>
                 <button onClick={this.onClickCancel.bind(this)}>Cancel turn</button>
+                <button onClick={this.onClickEndTurn.bind(this)}>End turn</button>
             </div>
         )
     }
