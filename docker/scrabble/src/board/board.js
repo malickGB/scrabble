@@ -3,6 +3,16 @@ import Letter from '../letter/letter';
 import './board.css'
 import Square from '../square/square'
 
+
+/**
+ * TODO:
+ *      - Add validation button to end turn
+ *      - Count total points for newly created word
+ *      - Save state before playing, in case not valid word
+ * 
+ * 
+ *  ... Implement rules
+ */
 class Board extends React.Component {
     bagLetters = { ...this.props.lettersBag };
 
@@ -13,6 +23,8 @@ class Board extends React.Component {
             player1Letters: [],
             player2Letters: [],
             selectedLetter: null,
+            backup: [],
+            player1Turn: true
         }
 
     }
@@ -105,7 +117,7 @@ class Board extends React.Component {
         return value;
     }
 
-    getRandomLetters(currentLetters) {
+    getRandomLetters(currentLetters = []) {
         //get keys whose value > 0  (contained in the bag)
         var bag = this.bagLetters;
         currentLetters.forEach(element => {
@@ -152,15 +164,20 @@ class Board extends React.Component {
         // if(this.state.player1Letters.includes())
         if (this.state.selectedLetter != null) {
             var squares = this.state.squares.slice();
+            var backup = this.state.backup.slice();
+
             squares[id] = [this.state.selectedLetter[1], this.getValue(this.state.selectedLetter[1])];
             var letter_id = this.state.selectedLetter[0];
             letter_id = letter_id.split('-');
+            var letter_id_number = letter_id[letter_id.length - 1];
+            backup.push([this.state.selectedLetter[1], parseInt(letter_id_number),id]);
             this.setState({
                 squares: squares,
                 selectedLetter: null,
+                backup: backup
             })
 
-            var letter_id_number = letter_id[letter_id.length - 1];
+            
             var playercopy = this.state.player1Letters.slice();
             var removeFromPlayer1 = true
             var selected = [this.state.selectedLetter[1], parseInt(letter_id_number)] // parse id to match with player's letters
@@ -222,6 +239,37 @@ class Board extends React.Component {
         this.setState({
             selectedLetter: [id, letter]
         })
+    }
+
+    /**
+     * Put letters back in player's hand
+     * Removes table from board
+     */
+    onClickCancel = () =>{
+        var backup = this.state.backup;
+        var squares = this.state.squares;
+        var playerLetters = this.state.player1Letters;
+        if(!this.state.player1Turn){
+            playerLetters = this.state.player2Letters;
+        }    
+        for (var i = 0; i < backup.length; i++) {
+            playerLetters.push([backup[i][0], backup[i][1]]);
+            squares[backup[i][2]] = [null,null];
+        }
+        if(this.state.player1Turn){
+            this.setState({
+                player1Letters: playerLetters,
+                backup: [],
+                squares: squares
+            })
+        }
+        else{
+            this.setState({
+                player2Letters: playerLetters,
+                backup: [],
+                squares: squares
+            })
+        }
     }
 
     render() {
@@ -547,6 +595,7 @@ class Board extends React.Component {
                 </ul>
                 <button onClick={this.btn1Click.bind(this)}>refresh 1</button>
                 <button onClick={this.btn2Click.bind(this)}>refresh 2</button>
+                <button onClick={this.onClickCancel.bind(this)}>Cancel turn</button>
             </div>
         )
     }
