@@ -6,12 +6,17 @@ import Square from '../square/square'
 
 /**
  * TODO:
- *      - Add validation button to end turn
- *      - Count total points for newly created word
- *      - Save state before playing, in case not valid word
+ *      - Get availables tile to play                   [X]
+ *      - Add validation button to end turn             [ ]
+ *      - Check turn, know if middle only available
+ *      - Count total points for newly created word     [ ]
+ *      - Get newly created word                        [ ]
+ *      - Save state before playing:                    [ ]
+ *          - If cancel                                 [x]
+ *          - in case not valid word                    [ ]
  * 
- * 
- *  ... Implement rules
+ *
+ *  ... Implement rules                                 [ ]
  */
 class Board extends React.Component {
     bagLetters = { ...this.props.lettersBag };
@@ -24,7 +29,8 @@ class Board extends React.Component {
             player2Letters: [],
             selectedLetter: null,
             backup: [],
-            player1Turn: true
+            player1Turn: true,
+            validSquares: { 'top': null, 'bot': null, 'left': null, 'right': null, 'first': 112 },
         }
 
     }
@@ -155,6 +161,131 @@ class Board extends React.Component {
         return -1;
     }
 
+    isEmpty = () => {
+        for(var i = 0; i < this.state.squares.length; i++)
+        {
+            if(this.state.squares[i][0] != null)
+                return false;
+        }
+        return true;
+    }
+
+    getValidSquares = () => {
+        // case first turn
+        if (this.state.validSquares['first'] == 112 && this.state.squares[112][0] == null) {
+            return
+        }
+
+        var canceledFirstMove = true;
+        Object.keys(this.state.validSquares).forEach((key) => {
+            if (this.state.validSquares[key] != null)
+                canceledFirstMove = false;
+        })
+
+        if (canceledFirstMove && this.isEmpty())
+        {
+            this.setState({
+                validSquares: { 'top': null, 'bot': null, 'left': null, 'right': null, 'first': 112 }
+            });
+            return;
+        }
+
+        var validSquares = { 'top': null, 'bot': null, 'left': null, 'right': null, 'first': null };
+        var squares = this.state.squares.slice();
+        var backup = this.state.backup.slice(); 
+        // Player starts playing, get all available squares
+        if (backup == []){
+            for (var i = 0; i < squares.length; i++) {
+                if (squares[i][0] != null) {
+                    var top = i - 15;
+                    var bot = i + 15;
+                    var left = i - 1;
+                    var right = i + 1;
+                    if (typeof squares[top] != 'undefined' && squares[top][0] == null) 
+                        validSquares['top'] = top;
+                    if (typeof squares[bot] != 'undefined' && squares[bot][0] == null)
+                            validSquares['bot'] = bot;
+                    if (typeof squares[left] != 'undefined' && squares[left][0] == null)
+                        validSquares['left'] = left ;
+                    if (typeof squares[right] != 'undefined' && squares[right][0] == null)
+                        validSquares['right'] = right;
+                }
+            }
+        }
+        else if (backup.length > 0){
+            // Player has played already, get coordinates from last played square
+            console.log(backup.length)
+            var top = backup[backup.length - 1][2] - 15;
+            if (typeof squares[top] == 'undefined' || squares[top][0] != null)
+            {
+                while (typeof squares[top] != 'undefined' && squares[top][0] != null)
+                {
+                    top -= 15;
+                }
+                if(top < 0)
+                    top = null;
+            }
+            var bot = backup[backup.length - 1][2] + 15;
+            if (typeof squares[bot] == 'undefined' || squares[bot][0] != null)
+            {
+                while (typeof squares[bot] != 'undefined' && squares[bot][0] != null) {
+                    bot += 15;
+                }
+                if (bot > 224)
+                    bot = null;
+            }
+            var left = backup[backup.length - 1][2] - 1;
+            if (typeof squares[left] == 'undefined' || squares[left][0] != null || left % 15 == 14)
+            {
+                while (typeof squares[left] != 'undefined' && squares[left][0] != null) {
+                    left -= 1;
+                }
+                if (left < 0 || (left % 15) == 14)
+                    left = null;
+            }
+            var right = backup[backup.length - 1][2] + 1;
+            if (typeof squares[right] == 'undefined' || squares[right][0] != null || right % 15 == 0)
+            {
+                while (typeof squares[right] != 'undefined' && squares[right][0] != null) {
+                    right += 1;
+                }
+                if ((right% 15) == 0)
+                    right = null;
+            }
+            //first move
+            if (backup[backup.length - 1][2] == 112){
+                validSquares = { 'top': top, 'bot': bot, 'left': left, 'right': right, 'first': null };
+            }
+            else{
+                // Filter to Play only on same axis
+                if(backup.length > 1){
+                    var axis = backup[backup.length - 1][2] - backup[backup.length - 2][2]
+                    //playing horizontally
+                    if (Math.abs(axis) < 15)
+                    {
+                        validSquares['top'] = null;
+                        validSquares['bot'] = null;
+                        validSquares['left'] = left;
+                        validSquares['right'] = right;
+                    }
+                    // Playing vertically
+                    else{
+                        validSquares['top'] = top;
+                        validSquares['bot'] = bot;
+                        validSquares['left'] = null;
+                        validSquares['right'] = null;
+                    }
+                }
+                else{
+                    validSquares = { 'top': top, 'bot': bot, 'left': left, 'right': right, 'first': null };
+                }
+            }
+        }
+        this.setState({
+            validSquares: validSquares
+        })
+    }
+
     /**
      * puts letter into the board
      * TODO : Remove from player's hand
@@ -162,22 +293,24 @@ class Board extends React.Component {
     onClickEmptyHandler = (id) => {
         // remove from player's hand
         // if(this.state.player1Letters.includes())
-        if (this.state.selectedLetter != null) {
+        var nextMoveLegal = false;
+        Object.keys(this.state.validSquares).forEach((key) => {
+            if(id == this.state.validSquares[key])
+                nextMoveLegal = true;
+        })
+        if (this.state.selectedLetter != null && nextMoveLegal == true) {
             var squares = this.state.squares.slice();
             var backup = this.state.backup.slice();
-
             squares[id] = [this.state.selectedLetter[1], this.getValue(this.state.selectedLetter[1])];
             var letter_id = this.state.selectedLetter[0];
             letter_id = letter_id.split('-');
             var letter_id_number = letter_id[letter_id.length - 1];
-            backup.push([this.state.selectedLetter[1], parseInt(letter_id_number),id]);
+            backup.push([this.state.selectedLetter[1], parseInt(letter_id_number), id]);
             this.setState({
                 squares: squares,
                 selectedLetter: null,
                 backup: backup
             })
-
-            
             var playercopy = this.state.player1Letters.slice();
             var removeFromPlayer1 = true
             var selected = [this.state.selectedLetter[1], parseInt(letter_id_number)] // parse id to match with player's letters
@@ -202,7 +335,7 @@ class Board extends React.Component {
                 })
             }
 
-            this.renderSquare(id)
+            this.renderSquare(id);
         }
     }
 
@@ -236,6 +369,7 @@ class Board extends React.Component {
     }
 
     onClickLetterHandler = (id, letter) => {
+        this.getValidSquares();
         this.setState({
             selectedLetter: [id, letter]
         })
@@ -245,28 +379,30 @@ class Board extends React.Component {
      * Put letters back in player's hand
      * Removes table from board
      */
-    onClickCancel = () =>{
+    onClickCancel = () => {
         var backup = this.state.backup;
         var squares = this.state.squares;
         var playerLetters = this.state.player1Letters;
-        if(!this.state.player1Turn){
+        if (!this.state.player1Turn) {
             playerLetters = this.state.player2Letters;
-        }    
+        }
         for (var i = 0; i < backup.length; i++) {
             playerLetters.push([backup[i][0], backup[i][1]]);
-            squares[backup[i][2]] = [null,null];
+            squares[backup[i][2]] = [null, null];
         }
-        if(this.state.player1Turn){
+        if (this.state.player1Turn) {
             this.setState({
                 player1Letters: playerLetters,
                 backup: [],
+                validSquares: {},
                 squares: squares
             })
         }
-        else{
+        else {
             this.setState({
                 player2Letters: playerLetters,
                 backup: [],
+                validSquares: {},
                 squares: squares
             })
         }
