@@ -10,7 +10,7 @@ import Square from '../square/square'
  *          - Play horizontallly                        [X]
  *          - Play vertically                           [X]
  *          - Reset turn                                [X]
- *      - Add validation button to end turn             [ ]
+ *      - Add validation button to end turn             [X]
  *      - Check turn, know if middle only available     [X]
  *      - Save state before playing:                    [X]
  *          - If cancel                                 [x]
@@ -18,8 +18,8 @@ import Square from '../square/square'
  * 
  *
  *  ... Implement rules                                 [ ]
- *      - Count total points for newly created word     [ ]
  *      - Get newly created word                        [ ]
+ *      - Count total points for newly created word     [ ]
  *      - in case not valid word , cancel input         [ ]
  */
 class Board extends React.Component {
@@ -207,19 +207,19 @@ class Board extends React.Component {
                 bot = null;
         }
         var left = backup[backup.length - 1][2] - 1;
-        if (typeof squares[left] == 'undefined' || squares[left][0] != null || left % 15 == 14) {
+        if (typeof squares[left] == 'undefined' || squares[left][0] != null || left % 15 === 14) {
             while (typeof squares[left] != 'undefined' && squares[left][0] != null) {
                 left -= 1;
             }
-            if (left < 0 || (left % 15) == 14)
+            if (left < 0 || (left % 15) === 14)
                 left = null;
         }
         var right = backup[backup.length - 1][2] + 1;
-        if (typeof squares[right] == 'undefined' || squares[right][0] != null || right % 15 == 0) {
+        if (typeof squares[right] == 'undefined' || squares[right][0] != null || right % 15 === 0) {
             while (typeof squares[right] != 'undefined' && squares[right][0] != null) {
                 right += 1;
             }
-            if ((right % 15) == 0)
+            if ((right % 15) === 0)
                 right = null;
         }
         return [top,bot,left, right];
@@ -227,7 +227,7 @@ class Board extends React.Component {
 
     getValidSquares = () => {
         // case first turn
-        if (this.state.validSquares['first'] == 112 && this.state.squares[112][0] == null) {
+        if (this.state.validSquares['first'] === 112 && this.state.squares[112][0] === null) {
             return
         }
 
@@ -249,7 +249,7 @@ class Board extends React.Component {
         var squares = this.state.squares.slice();
         var backup = this.state.backup.slice();
         // Player starts playing, get all available squares
-        if (this.state.backup.length == 0) {
+        if (this.state.backup.length === 0) {
             var allAvailableSquares = [];
             for (var i = 0; i < squares.length; i++) {
                 if (squares[i][0] != null) {
@@ -316,12 +316,12 @@ class Board extends React.Component {
         // if(this.state.player1Letters.includes())
         var nextMoveLegal = false;
         Object.keys(this.state.validSquares).forEach((key) => {
-            if (id == this.state.validSquares[key])
+            if (id === this.state.validSquares[key])
                 nextMoveLegal = true;
         })
         if(this.state.allAvailableSquares.includes(id))
             nextMoveLegal = true
-        if (this.state.selectedLetter != null && nextMoveLegal == true) {
+        if (this.state.selectedLetter != null && nextMoveLegal === true) {
             var squares = this.state.squares.slice();
             var backup = this.state.backup.slice();
             squares[id] = [this.state.selectedLetter[1], this.getValue(this.state.selectedLetter[1])];
@@ -436,9 +436,113 @@ class Board extends React.Component {
             })
         }
     }
+    
+    
+    /**
+     * Returns words created by consequence..
+     * TODO, GET LETTER LEFT
+     */
+    getAdjacentWords = () =>{
+        var putLetters = this.state.backup.map((elm) => elm[2]).sort((a,b) => a - b);
+        var res = [];
+        // Plays horizontally
+        if ((putLetters[1] - putLetters[0]) < 15){
+            // Starts at the end and Watch left
+            // Go all the way right and watch left
+            var index = putLetters.length - 1;
+            var current = putLetters[index];
+
+            // Go all the way right
+            while((current+1) % 15 != 0 && this.state.squares[current + 1] != 'undefined' && this.state.squares[current + 1][0] != null){
+                current += 1;
+            }
+
+            var tmp = this.state.squares[current][0];
+            // WHILE : on the same line | not empty 
+            current -= 1;
+
+            // Go all the way left, build the word from end to beginning
+            while((current % 15) != 14 && typeof this.state.squares[current] != 'undefined' && this.state.squares[current][0] != null){
+                tmp = this.state.squares[current][0] + tmp;
+                current -= 1;
+            }
+            res.push(tmp)
+
+            // Watch vertically for all letters
+            for(var i = 0; i < putLetters.length; i++){
+                var first = putLetters[i];
+                // Go to the first vertically
+                while(this.state.squares[first -15] != 'undefined' && this.state.squares[first - 15][0] != null){
+                    first -= 15;
+                }
+                var tmp = this.state.squares[first][0];
+                first += 15;
+                // Get the whole word vertically
+                while(this.state.squares[first] != 'undefined' && this.state.squares[first][0] != null){
+                    tmp = tmp + this.state.squares[first][0];
+                    first += 15;
+                }
+                if (tmp.length > 1)
+                    res.push(tmp);
+            }
+        }
+        else{
+
+        }
+        // //Plays vertically
+        // for(var i = 0; i < putLetters.length; i++){
+        //     //get left
+        //     var current = putLetters[i];
+        //     // If : in board | not placed by current player 
+        //     if((current - 1) % 15 != 14 && !putLetters.includes(current - 1) ){
+        //         // If: exits |  not empty
+        //         if (typeof this.state.squares[current - 1] != 'undefined' && this.state.squares[current - 1][0] != null){
+        //             var tmp = this.state.squares[current][0];
+        //             current -= 1;
+        //             while ((current) % 15 != 14 && (typeof this.state.squares[current] != 'undefined') && this.state.squares[current][0] != null){
+        //                 tmp = this.state.squares[current][0] + tmp;
+        //                 current -= 1;
+        //             }
+        //             res.push(tmp);
+        //         }
+        //     }
+        // }
+        return res
+    }
+
+    /** 
+     * Returns the word players has created with own letters
+     */
+    getCreatedWord = () =>{
+        var putLetters = this.state.backup.map((elm) => elm[2]);
+        var res = []
+        var str = "";
+        putLetters = putLetters.sort((a,b) => a - b);
+        var diff = putLetters[putLetters.length -1 ] - putLetters[0];
+        // playing vertically
+        var index = putLetters[0];
+        if(diff % 15 === 0){
+            while(index <= putLetters[putLetters.length -1])
+            {
+                str = str + this.state.squares[index][0];
+                index += 15;
+            }
+        }
+        // Playing horizontally
+        else{
+            while (index <= putLetters[putLetters.length - 1]) {
+                str = str + this.state.squares[index][0];
+                index += 1;
+            }
+        }
+        res.push(str);
+        res.push(...this.getAdjacentWords());
+        console.log(res);
+    }
 
     // ADD verification
     onClickEndTurn = () =>{
+        this.getCreatedWord();
         this.setState({
             player1Turn : !this.state.player1Turn,
             selectedLetter: null,
@@ -449,6 +553,31 @@ class Board extends React.Component {
 
 
     render() {
+        var refreshButton = this.state.player1Turn ? <button onClick={this.btn1Click.bind(this)}>refresh 1</button>
+                                                    : <button onClick={this.btn2Click.bind(this)}>refresh 2</button>;
+        var letters = this.state.player1Turn ? <ul>
+                                                    {this.state.player1Letters.map((value) => {
+
+                                                        return <li key={"player1-" + this.bagLetters[value[0]] + value}>
+                                                            <Letter
+                                                                id={"player1-" + value[0] + '-' + value[1]}
+                                                                letter={value[0]}
+                                                                onClickLetter={this.onClickLetterHandler}
+                                                            />
+                                                        </li>
+                                                    })}
+                                                </ul> 
+                                            :   <ul>
+                                                    {this.state.player2Letters.map((value) => {
+                                                        return <li key={"player2-" + this.bagLetters[value[0]] + value}>
+                                                            <Letter
+                                                                id={"player2-" + value[0] + '-' + value[1]}
+                                                                letter={value[0]}
+                                                                onClickLetter={this.onClickLetterHandler}
+                                                            />
+                                                        </li>
+                                                    })}
+                                                </ul>
         return (
             <div className="game-board">
                     <table>
@@ -746,31 +875,8 @@ class Board extends React.Component {
                         </tr>
                     </tbody>
                 </table>
-                <ul>
-                    {this.state.player1Letters.map((value) => {
-
-                        return <li key={"player1-" + this.bagLetters[value[0]] + value}>
-                            <Letter
-                                id={"player1-" + value[0] + '-' + value[1]}
-                                letter={value[0]}
-                                onClickLetter={this.onClickLetterHandler}
-                            />
-                        </li>
-                    })}
-                </ul>
-                <ul>
-                    {this.state.player2Letters.map((value) => {
-                        return <li key={"player2-" + this.bagLetters[value[0]] + value}>
-                            <Letter
-                                id={"player2-" + value[0] + '-' + value[1]}
-                                letter={value[0]}
-                                onClickLetter={this.onClickLetterHandler}
-                            />
-                        </li>
-                    })}
-                </ul>
-                <button onClick={this.btn1Click.bind(this)}>refresh 1</button>
-                <button onClick={this.btn2Click.bind(this)}>refresh 2</button>
+                {letters}
+                {refreshButton}
                 <button onClick={this.onClickCancel.bind(this)}>Cancel turn</button>
                 <button onClick={this.onClickEndTurn.bind(this)}>End turn</button>
             </div>
