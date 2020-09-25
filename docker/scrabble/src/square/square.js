@@ -15,7 +15,7 @@ class Square extends React.Component {
     handleclick = () =>{
         this.setState(() =>{
             if (this.props.onClickEmpty){
-                this.props.onClickEmpty(this.state.id)
+                this.props.onClickEmpty(this.state.id, this.state.bonus_letter, this.state.bonus_word)
             }
         })
     }

@@ -41,7 +41,7 @@ class Game extends React.Component{
         var lettersBag = this.getLetters();
         this.state = 
         {
-            array: Array(225).fill([null,null]),
+            array: Array(225).fill([null,null,null]),
             lettersBag: lettersBag
         }
     }

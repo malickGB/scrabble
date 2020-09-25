@@ -18,8 +18,9 @@ import Square from '../square/square'
  * 
  *
  *  ... Implement rules                                 [ ]
- *      - Get newly created word                        [ ]
- *      - Count total points for newly created word     [ ]
+ *      - Get newly created word                        [X]
+ *      - Count total points for newly created word     [X]
+ *      - Count Bonus                                   [ ]
  *      - in case not valid word , cancel input         [ ]
  */
 class Board extends React.Component {
@@ -55,7 +56,7 @@ class Board extends React.Component {
                 value = 3;
                 break;
             case 'C':
-                value = 4;
+                value = 3;
                 break;
             case 'D':
                 value = 2;
@@ -312,7 +313,7 @@ class Board extends React.Component {
      * puts letter into the board
      * TODO : Remove from player's hand
      */
-    onClickEmptyHandler = (id) => {
+    onClickEmptyHandler = (id, bonus_letter, bonus_word) => {
         // remove from player's hand
         // if(this.state.player1Letters.includes())
         var nextMoveLegal = false;
@@ -325,7 +326,8 @@ class Board extends React.Component {
         if (this.state.selectedLetter != null && nextMoveLegal === true) {
             var squares = this.state.squares.slice();
             var backup = this.state.backup.slice();
-            squares[id] = [this.state.selectedLetter[1], this.getValue(this.state.selectedLetter[1])];
+            // INSERTS BONUS HERE
+            squares[id] = [this.state.selectedLetter[1], bonus_letter, bonus_word];
             var letter_id = this.state.selectedLetter[0];
             letter_id = letter_id.split('-');
             var letter_id_number = letter_id[letter_id.length - 1];
@@ -378,7 +380,7 @@ class Board extends React.Component {
     }
 
     // Get new Letters
-    btn1Click = () => {
+    refreshPlayer1Letters = () => {
         if(this.state.player1Turn)
         {
             var currentLetters = this.state.player1Letters.slice();
@@ -388,7 +390,7 @@ class Board extends React.Component {
         }
     }
 
-    btn2Click = () => {
+    refreshPlayer2Letters = () => {
         if(!this.state.player1Turn)
         {
             var currentLetters = this.state.player2Letters.slice();
@@ -438,87 +440,146 @@ class Board extends React.Component {
         }
     }
     
+    /**
+     * Returns letter value * bonus_letter
+     */
+    countLettersPoint = (letter, index,squaresCopy) => {
+        var res = this.getValue(letter) * squaresCopy[index][1];
+        
+        // Remove bonus because already used
+        if (squaresCopy[index][1] != 1) {
+            squaresCopy[index] = [squaresCopy[index][0], 1, squaresCopy[index][2]]
+        }
+        return [res,squaresCopy];
+    }
     
     /**
      * Returns words created by consequence..
-     * TODO, GET LETTER LEFT
+     * FIXME : - Return the bonus_word, or bonus_letter depending on the state.squares
+     *         - Refresh state.squares when done
+     *         - Case putting 1 letter 
      */
     getAdjacentWords = () =>{        
         var putLetters = this.state.backup.map((elm) => elm[2]).sort((a,b) => a - b);
         var res = [];
         var index = putLetters.length - 1;
         var current = putLetters[index];
+        var score = 0;
+        var bonus_word = 1;
+        var squaresCopy = [...this.state.squares];
         // Plays horizontally
         if ((putLetters[1] - putLetters[0]) < 15){
             // Go all the way right and watch left
-            while((current+1) % 15 != 0 && typeof this.state.squares[current + 1] != 'undefined' && this.state.squares[current + 1][0] != null){
+            while((current+1) % 15 != 0 && typeof squaresCopy[current + 1] != 'undefined' && squaresCopy[current + 1][0] != null){
                 current += 1;
             }
-
-            var tmp = this.state.squares[current][0];
-            current -= 1;
+            var tmp = "";
 
             // Go all the way left, build the word from end to beginning
             // WHILE : on the same line | not empty 
-            while((current % 15) != 14 && typeof this.state.squares[current] != 'undefined' && this.state.squares[current][0] != null){
-                tmp = this.state.squares[current][0] + tmp;
+            while(((current - 1) % 15) != 14 && typeof squaresCopy[current] != 'undefined' && squaresCopy[current][0] != null){
+                tmp = squaresCopy[current][0] + tmp;
+                // Remember to Apply bonus word at the end
+                // if (this.state.squares[current][2])
+                //     bonus_word = this.state.squares[current][2];
+                var updated = this.countLettersPoint(squaresCopy[current][0], current,squaresCopy);
+                score += updated[0];
+                squaresCopy = updated[1];
                 current -= 1;
             }
-            res.push(tmp)
-
+            // Apply bonus & reset value
+            // FIXME : APPLY BONUS WORD
+            // if(bonus_word != 1)
+            // {
+            //     score *= bonus_word;
+            //     bonus_word = 1;
+            //     squaresCopy[current + 1] = [this.state.squares[current + 1][0], this.state.squares[1], 1]
+            //     this.setState({
+            //         squares: copy,
+            //     })
+            // }
+            res.push([tmp, score])
+            
             // Watch vertically for all letters
+            score = 0;
             for(var i = 0; i < putLetters.length; i++){
                 var first = putLetters[i];
                 // Go to the first vertically
-                while(typeof this.state.squares[first -15] != 'undefined' && this.state.squares[first - 15][0] != null){
+                while(typeof squaresCopy[first - 15] != 'undefined' && squaresCopy[first - 15][0] != null){
                     first -= 15;
                 }
-                var tmp = this.state.squares[first][0];
-                first += 15;
+                var tmp = "";
                 // Get the whole word vertically
-                while(typeof this.state.squares[first] != 'undefined' && this.state.squares[first][0] != null){
-                    tmp = tmp + this.state.squares[first][0];
+                while(typeof squaresCopy[first] != 'undefined' && squaresCopy[first][0] != null){
+                    tmp = tmp + squaresCopy[first][0];
+                    // if (this.state.squares[first][2])
+                    //     bonus_word = this.state.squares[first][2];
+                    var updated = this.countLettersPoint(squaresCopy[first][0], first, squaresCopy);
+                    score += updated[0];
+                    squaresCopy = updated[1];
                     first += 15;
                 }
                 if (tmp.length > 1)
-                    res.push(tmp);
+                {
+                    // if (bonus_word != 1)
+                    // {
+                    //     score *= bonus_word;
+                    //     bonus_word = 1;
+                    //     var copy = [...this.state.squares];
+                    //     copy[current] = [this.state.squares[current][0], this.state.squares[1], 1];
+                    //     this.setState({
+                    //         squares: copy,
+                    //     })
+                    // }          
+                    res.push([tmp,score]);
+                    score = 0;
+                }
             }
         }
         else{
             // go all the way top and watch bottom
-            while (typeof this.state.squares[current - 15] != 'undefined' && this.state.squares[current - 15][0] != null) {
+            while (typeof squaresCopy[current - 15] != 'undefined' && squaresCopy[current - 15][0] != null) {
                 current -= 15;
             }
-            var tmp = this.state.squares[current][0];
-            current += 15;
-
+            var tmp = "";
             // Builds the word up to down
-            while(typeof this.state.squares[current] != 'undefined' && this.state.squares[current][0] != null){
-                tmp = tmp + this.state.squares[current][0];
+            while(typeof squaresCopy[current] != 'undefined' && squaresCopy[current][0] != null){
+                tmp = tmp + squaresCopy[current][0];
+                var updated = this.countLettersPoint(squaresCopy[current][0], current, squaresCopy);
+                // ADD BONUS WORD HERE
+                score += updated[0];
+                squaresCopy = updated[1];
                 current += 15;
             }
-            res.push(tmp)
-            
+            res.push([tmp, score])
+            score = 0;
             // Watch horizontally for all words
             for(var i = 0; i < putLetters.length; i++){
                 var first = putLetters[i];
                 // go all the way left
-                while(((first -1 ) % 15) != 14 && typeof this.state.squares[first-1] != 'undefined' && this.state.squares[first - 1][0] != null){
+                while(((first - 1 ) % 15) != 14 && typeof squaresCopy[first-1] != 'undefined' && squaresCopy[first - 1][0] != null){
                     first -= 1;
                 }
 
-                tmp = this.state.squares[first][0];
-                first += 1;
-
+                var tmp = "";
                 // Get whole word horizontally
-                while(((first) % 15) != 0 && typeof this.state.squares[first] != 'undefined' && this.state.squares[first][0] != null){
-                    tmp = tmp + this.state.squares[first][0];
+                while(((first + 1) % 15) != 0 && typeof squaresCopy[first] != 'undefined' && squaresCopy[first][0] != null){
+                    tmp = tmp + squaresCopy[first][0];
+                    var updated = this.countLettersPoint(squaresCopy[first][0], first, squaresCopy);
+                    // ADD BONUS WORD HERE
+                    score += updated[0];
+                    squaresCopy = updated[1];
                     first += 1;
                 }
-                if (tmp.length > 1)
-                    res.push(tmp);
+                if (tmp.length > 1){
+                    res.push([tmp, score]);
+                }
+                score = 0;
             }
         }
+        this.setState({
+            squares: squaresCopy
+        })
         return res
     }
 
@@ -526,30 +587,17 @@ class Board extends React.Component {
      * Returns the word players has created with own letters
      */
     getCreatedWord = () =>{
-        var putLetters = this.state.backup.map((elm) => elm[2]);
-        var res = []
-        // var str = "";
-        // putLetters = putLetters.sort((a,b) => a - b);
-        // var diff = putLetters[putLetters.length -1 ] - putLetters[0];
-        // // playing vertically
-        // var index = putLetters[0];
-        // if(diff % 15 === 0){
-        //     while(index <= putLetters[putLetters.length -1])
-        //     {
-        //         str = str + this.state.squares[index][0];
-        //         index += 15;
-        //     }
-        // }
-        // // Playing horizontally
-        // else{
-        //     while (index <= putLetters[putLetters.length - 1]) {
-        //         str = str + this.state.squares[index][0];
-        //         index += 1;
-        //     }
-        // }
-        // res.push(str);
-        res.push(...this.getAdjacentWords());
-        console.log(res);
+        var res = this.getAdjacentWords();
+        var score = 0
+        for (var i = 0; i < res.length; i++)
+        {
+            var word= res[i];
+            console.log(word);
+            [...word].forEach(letter =>
+                score += this.getValue(letter)
+            )
+        }
+        // FIXME : Add verification from a dictionnary
     }
 
     // ADD verification
@@ -566,8 +614,8 @@ class Board extends React.Component {
 
 
     render() {
-        var refreshButton = this.state.player1Turn ? <button onClick={this.btn1Click.bind(this)}>refresh 1</button>
-                                                    : <button onClick={this.btn2Click.bind(this)}>refresh 2</button>;
+        var refreshButton = this.state.player1Turn ? <button onClick={this.refreshPlayer1Letters.bind(this)}>refresh 1</button>
+                                                    : <button onClick={this.refreshPlayer2Letters.bind(this)}>refresh 2</button>;
         var letters = this.state.player1Turn ? <ul>
                                                     {this.state.player1Letters.map((value) => {
 
