@@ -20,7 +20,8 @@ import Square from '../square/square'
  *  ... Implement rules                                 [ ]
  *      - Get newly created word                        [X]
  *      - Count total points for newly created word     [X]
- *      - Count Bonus                                   [ ]
+ *      - Count Bonus                                   [X]
+ *      - Count Bonus Word                              [ ]
  *      - in case not valid word , cancel input         [ ]
  */
 class Board extends React.Component {
@@ -37,7 +38,7 @@ class Board extends React.Component {
             player1Turn: true,
             validSquares: { 'top': null, 'bot': null, 'left': null, 'right': null, 'first': 112 },
             allAvailableSquares: [],
-            turn : 0
+            turn: 0
         }
 
     }
@@ -224,7 +225,7 @@ class Board extends React.Component {
             if ((right % 15) === 0)
                 right = null;
         }
-        return [top,bot,left, right];
+        return [top, bot, left, right];
     }
 
     getValidSquares = () => {
@@ -266,7 +267,7 @@ class Board extends React.Component {
                     if (typeof squares[left] != 'undefined' && squares[left][0] == null)
                         allAvailableSquares.push(left);
                     if (typeof squares[right] != 'undefined' && squares[right][0] == null)
-                        allAvailableSquares.push(right);   
+                        allAvailableSquares.push(right);
                 }
             }
             this.setState({
@@ -277,9 +278,9 @@ class Board extends React.Component {
         }
         else if (backup.length > 0) {
             // Player has played already, get coordinates from last played square
-            var newCoordinates = this.getNextCoordinates(squares,backup);
+            var newCoordinates = this.getNextCoordinates(squares, backup);
             var top = newCoordinates[0];
-            var bot =  newCoordinates[1];
+            var bot = newCoordinates[1];
             var left = newCoordinates[2];
             var right = newCoordinates[3];
             if (backup.length > 1) {
@@ -321,7 +322,7 @@ class Board extends React.Component {
             if (id === this.state.validSquares[key])
                 nextMoveLegal = true;
         })
-        if(this.state.allAvailableSquares.includes(id))
+        if (this.state.allAvailableSquares.includes(id))
             nextMoveLegal = true
         if (this.state.selectedLetter != null && nextMoveLegal === true) {
             var squares = this.state.squares.slice();
@@ -381,8 +382,7 @@ class Board extends React.Component {
 
     // Get new Letters
     refreshPlayer1Letters = () => {
-        if(this.state.player1Turn)
-        {
+        if (this.state.player1Turn) {
             var currentLetters = this.state.player1Letters.slice();
             this.setState({
                 player1Letters: this.getRandomLetters(currentLetters)
@@ -391,13 +391,12 @@ class Board extends React.Component {
     }
 
     refreshPlayer2Letters = () => {
-        if(!this.state.player1Turn)
-        {
+        if (!this.state.player1Turn) {
             var currentLetters = this.state.player2Letters.slice();
             this.setState({
                 player2Letters: this.getRandomLetters(currentLetters)
             });
-        }   
+        }
     }
 
     onClickLetterHandler = (id, letter) => {
@@ -439,28 +438,28 @@ class Board extends React.Component {
             })
         }
     }
-    
+
     /**
      * Returns letter value * bonus_letter
      */
-    countLettersPoint = (letter, index,squaresCopy) => {
+    countLettersPoint = (letter, index, squaresCopy) => {
         var res = this.getValue(letter) * squaresCopy[index][1];
-        
+
         // Remove bonus because already used
         if (squaresCopy[index][1] != 1) {
             squaresCopy[index] = [squaresCopy[index][0], 1, squaresCopy[index][2]]
         }
-        return [res,squaresCopy];
+        return [res, squaresCopy];
     }
-    
+
     /**
      * Returns words created by consequence..
      * FIXME : - Return the bonus_word, or bonus_letter depending on the state.squares
      *         - Refresh state.squares when done
      *         - Case putting 1 letter 
      */
-    getAdjacentWords = () =>{        
-        var putLetters = this.state.backup.map((elm) => elm[2]).sort((a,b) => a - b);
+    getAdjacentWords = () => {
+        var putLetters = this.state.backup.map((elm) => elm[2]).sort((a, b) => a - b);
         var res = [];
         var index = putLetters.length - 1;
         var current = putLetters[index];
@@ -468,21 +467,21 @@ class Board extends React.Component {
         var bonus_word = 1;
         var squaresCopy = [...this.state.squares];
         // Plays horizontally
-        if ((putLetters[1] - putLetters[0]) < 15){
+        if ((putLetters[1] - putLetters[0]) < 15) {
             // Go all the way right and watch left
-            while((current+1) % 15 != 0 && typeof squaresCopy[current + 1] != 'undefined' && squaresCopy[current + 1][0] != null){
+            while ((current + 1) % 15 != 0 && typeof squaresCopy[current + 1] != 'undefined' && squaresCopy[current + 1][0] != null) {
                 current += 1;
             }
             var tmp = "";
 
             // Go all the way left, build the word from end to beginning
             // WHILE : on the same line | not empty 
-            while(((current - 1) % 15) != 14 && typeof squaresCopy[current] != 'undefined' && squaresCopy[current][0] != null){
+            while (((current - 1) % 15) != 14 && typeof squaresCopy[current] != 'undefined' && squaresCopy[current][0] != null) {
                 tmp = squaresCopy[current][0] + tmp;
                 // Remember to Apply bonus word at the end
                 // if (this.state.squares[current][2])
                 //     bonus_word = this.state.squares[current][2];
-                var updated = this.countLettersPoint(squaresCopy[current][0], current,squaresCopy);
+                var updated = this.countLettersPoint(squaresCopy[current][0], current, squaresCopy);
                 score += updated[0];
                 squaresCopy = updated[1];
                 current -= 1;
@@ -499,18 +498,18 @@ class Board extends React.Component {
             //     })
             // }
             res.push([tmp, score])
-            
+
             // Watch vertically for all letters
             score = 0;
-            for(var i = 0; i < putLetters.length; i++){
+            for (var i = 0; i < putLetters.length; i++) {
                 var first = putLetters[i];
                 // Go to the first vertically
-                while(typeof squaresCopy[first - 15] != 'undefined' && squaresCopy[first - 15][0] != null){
+                while (typeof squaresCopy[first - 15] != 'undefined' && squaresCopy[first - 15][0] != null) {
                     first -= 15;
                 }
                 var tmp = "";
                 // Get the whole word vertically
-                while(typeof squaresCopy[first] != 'undefined' && squaresCopy[first][0] != null){
+                while (typeof squaresCopy[first] != 'undefined' && squaresCopy[first][0] != null) {
                     tmp = tmp + squaresCopy[first][0];
                     // if (this.state.squares[first][2])
                     //     bonus_word = this.state.squares[first][2];
@@ -519,8 +518,7 @@ class Board extends React.Component {
                     squaresCopy = updated[1];
                     first += 15;
                 }
-                if (tmp.length > 1)
-                {
+                if (tmp.length > 1) {
                     // if (bonus_word != 1)
                     // {
                     //     score *= bonus_word;
@@ -531,19 +529,19 @@ class Board extends React.Component {
                     //         squares: copy,
                     //     })
                     // }          
-                    res.push([tmp,score]);
+                    res.push([tmp, score]);
                     score = 0;
                 }
             }
         }
-        else{
+        else {
             // go all the way top and watch bottom
             while (typeof squaresCopy[current - 15] != 'undefined' && squaresCopy[current - 15][0] != null) {
                 current -= 15;
             }
             var tmp = "";
             // Builds the word up to down
-            while(typeof squaresCopy[current] != 'undefined' && squaresCopy[current][0] != null){
+            while (typeof squaresCopy[current] != 'undefined' && squaresCopy[current][0] != null) {
                 tmp = tmp + squaresCopy[current][0];
                 var updated = this.countLettersPoint(squaresCopy[current][0], current, squaresCopy);
                 // ADD BONUS WORD HERE
@@ -554,16 +552,16 @@ class Board extends React.Component {
             res.push([tmp, score])
             score = 0;
             // Watch horizontally for all words
-            for(var i = 0; i < putLetters.length; i++){
+            for (var i = 0; i < putLetters.length; i++) {
                 var first = putLetters[i];
                 // go all the way left
-                while(((first - 1 ) % 15) != 14 && typeof squaresCopy[first-1] != 'undefined' && squaresCopy[first - 1][0] != null){
+                while (((first - 1) % 15) != 14 && typeof squaresCopy[first - 1] != 'undefined' && squaresCopy[first - 1][0] != null) {
                     first -= 1;
                 }
 
                 var tmp = "";
                 // Get whole word horizontally
-                while(((first + 1) % 15) != 0 && typeof squaresCopy[first] != 'undefined' && squaresCopy[first][0] != null){
+                while (((first + 1) % 15) != 0 && typeof squaresCopy[first] != 'undefined' && squaresCopy[first][0] != null) {
                     tmp = tmp + squaresCopy[first][0];
                     var updated = this.countLettersPoint(squaresCopy[first][0], first, squaresCopy);
                     // ADD BONUS WORD HERE
@@ -571,7 +569,7 @@ class Board extends React.Component {
                     squaresCopy = updated[1];
                     first += 1;
                 }
-                if (tmp.length > 1){
+                if (tmp.length > 1) {
                     res.push([tmp, score]);
                 }
                 score = 0;
@@ -586,12 +584,11 @@ class Board extends React.Component {
     /** 
      * Returns the word players has created with own letters
      */
-    getCreatedWord = () =>{
+    getCreatedWord = () => {
         var res = this.getAdjacentWords();
         var score = 0
-        for (var i = 0; i < res.length; i++)
-        {
-            var word= res[i];
+        for (var i = 0; i < res.length; i++) {
+            var word = res[i];
             console.log(word);
             [...word].forEach(letter =>
                 score += this.getValue(letter)
@@ -601,10 +598,10 @@ class Board extends React.Component {
     }
 
     // ADD verification
-    onClickEndTurn = () =>{
+    onClickEndTurn = () => {
         this.getCreatedWord();
         this.setState({
-            player1Turn : !this.state.player1Turn,
+            player1Turn: !this.state.player1Turn,
             selectedLetter: null,
             backup: [],
             validSquares: { 'top': null, 'bot': null, 'left': null, 'right': null, 'first': null },
@@ -615,38 +612,38 @@ class Board extends React.Component {
 
     render() {
         var refreshButton = this.state.player1Turn ? <button onClick={this.refreshPlayer1Letters.bind(this)}>refresh 1</button>
-                                                    : <button onClick={this.refreshPlayer2Letters.bind(this)}>refresh 2</button>;
+            : <button onClick={this.refreshPlayer2Letters.bind(this)}>refresh 2</button>;
         var letters = this.state.player1Turn ? <ul>
-                                                    {this.state.player1Letters.map((value) => {
+            {this.state.player1Letters.map((value) => {
 
-                                                        return <li key={"player1-" + this.bagLetters[value[0]] + value}>
-                                                            <Letter
-                                                                id={"player1-" + value[0] + '-' + value[1]}
-                                                                letter={value[0]}
-                                                                onClickLetter={this.onClickLetterHandler}
-                                                            />
-                                                        </li>
-                                                    })}
-                                                </ul> 
-                                            :   <ul>
-                                                    {this.state.player2Letters.map((value) => {
-                                                        return <li key={"player2-" + this.bagLetters[value[0]] + value}>
-                                                            <Letter
-                                                                id={"player2-" + value[0] + '-' + value[1]}
-                                                                letter={value[0]}
-                                                                onClickLetter={this.onClickLetterHandler}
-                                                            />
-                                                        </li>
-                                                    })}
-                                                </ul>;
-        var endTurn = this.state.backup.length > 0 ? <button onClick={this.onClickEndTurn.bind(this)}>End turn</button> : 
-                                                    <button disabled>End turn</button>  
-        if (this.state.turn == 0 && this.state.backup.length <2){
-            endTurn = <button disabled>End turn</button> 
+                return <li key={"player1-" + this.bagLetters[value[0]] + value}>
+                    <Letter
+                        id={"player1-" + value[0] + '-' + value[1]}
+                        letter={value[0]}
+                        onClickLetter={this.onClickLetterHandler}
+                    />
+                </li>
+            })}
+        </ul>
+            : <ul>
+                {this.state.player2Letters.map((value) => {
+                    return <li key={"player2-" + this.bagLetters[value[0]] + value}>
+                        <Letter
+                            id={"player2-" + value[0] + '-' + value[1]}
+                            letter={value[0]}
+                            onClickLetter={this.onClickLetterHandler}
+                        />
+                    </li>
+                })}
+            </ul>;
+        var endTurn = this.state.backup.length > 0 ? <button onClick={this.onClickEndTurn.bind(this)}>End turn</button> :
+            <button disabled>End turn</button>
+        if (this.state.turn == 0 && this.state.backup.length < 2) {
+            endTurn = <button disabled>End turn</button>
         }
         return (
             <div className="game-board">
-                    <table>
+                <table>
                     <thead>
                         {/* 15*15 board */}
                         <tr>
