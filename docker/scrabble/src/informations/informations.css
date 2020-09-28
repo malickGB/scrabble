@@ -1,12 +1,13 @@
-.helper-left{
+.informations{
     font-size: 15px;
-    width: 20%;
     height: max-content;
     background-color: rgb(243, 243, 194);
     border-radius: 5px;
     font-family: 'Courier New', Courier, monospace;
+    width: 25%;
+    
 }
 
-.helper-left li{
-   list-style: none ;
+.informations li{
+list-style-type: square;
 }

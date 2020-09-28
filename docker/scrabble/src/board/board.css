@@ -3,7 +3,6 @@ th, td{
 }
 
 .game-board{
-    display: grid;
     justify-content: center;
 }
 
@@ -21,7 +20,6 @@ th, td{
 
 table{
     margin-bottom: 20px;
-    margin-top: 20px;
 }
 
 thead{

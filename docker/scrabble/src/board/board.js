@@ -28,9 +28,10 @@ import Controls from '../controls/controls';
  *      - Count Bonus Word                              [X]
  *      - in case not valid word , cancel input         [ ]
  *      - Add verification (from dictionnary API?)      [ ]
+ *      - Add SCRABBLE +50                              [ ]
  * 
  *      Style
- *      - Display playable squares                      [ ]
+ *      - Display playable squares                      [X]
  *      - Have a better Interface                       [ ]
  *      - Show scores                                   [X]
  */
@@ -77,7 +78,7 @@ class Board extends React.Component {
                 var remaining = bag[letter];
                 res.push([letter, remaining - 1]);
                 // Change amout of remaining letters
-                var remainingLetters = Object.keys(bag)
+                remainingLetters = Object.keys(bag)
                     .filter((key) => bag[key] >= 0)
                 bag[letter] -= 1;
             }
@@ -190,10 +191,10 @@ class Board extends React.Component {
         else if (backup.length > 0) {
             // Player has played already, get coordinates from last played square
             var newCoordinates = this.getNextCoordinates(squares, backup);
-            var top = newCoordinates[0];
-            var bot = newCoordinates[1];
-            var left = newCoordinates[2];
-            var right = newCoordinates[3];
+            top = newCoordinates[0];
+            bot = newCoordinates[1];
+            left = newCoordinates[2];
+            right = newCoordinates[3];
             if (backup.length > 1) {
                 var axis = backup[backup.length - 1][2] - backup[backup.length - 2][2]
                 //playing horizontally
@@ -366,7 +367,7 @@ class Board extends React.Component {
         var res = getValue(letter) * squaresCopy[index][1];
 
         // Remove bonus because already used
-        if (squaresCopy[index][1] != 1) {
+        if (squaresCopy[index][1] !== 1) {
             squaresCopy[index] = [squaresCopy[index][0], 1, squaresCopy[index][2]]
         }
         return [res, squaresCopy];
@@ -387,14 +388,14 @@ class Board extends React.Component {
         // Plays horizontally
         if ((putLetters[1] - putLetters[0]) < 15) {
             // Go all the way right and watch left
-            while ((current + 1) % 15 != 0 && typeof squaresCopy[current + 1] != 'undefined' && squaresCopy[current + 1][0] != null) {
+            while ((current + 1) % 15 !== 0 && typeof squaresCopy[current + 1] != 'undefined' && squaresCopy[current + 1][0] !== null) {
                 current += 1;
             }
             var tmp = "";
 
             // Go all the way left, build the word from end to beginning
             // WHILE : on the same line | not empty 
-            while (((current - 1) % 15) != 14 && typeof squaresCopy[current] != 'undefined' && squaresCopy[current][0] != null) {
+            while (((current - 1) % 15) !== 14 && typeof squaresCopy[current] != 'undefined' && squaresCopy[current][0] !== null) {
                 tmp = squaresCopy[current][0] + tmp;
                 // Remember to Apply bonus word at the end
                 if (squaresCopy[current][2] > 1){
@@ -407,7 +408,7 @@ class Board extends React.Component {
                 current -= 1;
             }
             // Apply bonus & reset value
-            if(bonus_word != 1)
+            if(bonus_word !== 1)
             {
 
                 score *= bonus_word;
@@ -424,7 +425,7 @@ class Board extends React.Component {
                 while (typeof squaresCopy[first - 15] != 'undefined' && squaresCopy[first - 15][0] != null) {
                     first -= 15;
                 }
-                var tmp = "";
+                tmp = "";
                 // Get the whole word vertically
                 while (typeof squaresCopy[first] != 'undefined' && squaresCopy[first][0] != null) {
                     tmp = tmp + squaresCopy[first][0];
@@ -432,13 +433,13 @@ class Board extends React.Component {
                         bonus_id = first
                         bonus_word = squaresCopy[first][2];
                     }
-                    var updated = this.countLettersPoint(squaresCopy[first][0], first, squaresCopy);
+                    updated = this.countLettersPoint(squaresCopy[first][0], first, squaresCopy);
                     score += updated[0];
                     squaresCopy = updated[1];
                     first += 15;
                 }
                 if (tmp.length > 1) {
-                    if (bonus_word != 1)
+                    if (bonus_word !== 1)
                     {
                         score *= bonus_word;
                         bonus_word = 1;
@@ -454,11 +455,11 @@ class Board extends React.Component {
             while (typeof squaresCopy[current - 15] != 'undefined' && squaresCopy[current - 15][0] != null) {
                 current -= 15;
             }
-            var tmp = "";
+            tmp = "";
             // Builds the word up to down
             while (typeof squaresCopy[current] != 'undefined' && squaresCopy[current][0] != null) {
                 tmp = tmp + squaresCopy[current][0];
-                var updated = this.countLettersPoint(squaresCopy[current][0], current, squaresCopy);
+                updated = this.countLettersPoint(squaresCopy[current][0], current, squaresCopy);
                 // ADD BONUS WORD HERE
                 if (squaresCopy[current][2] > 1){
                     bonus_word = squaresCopy[current][2];
@@ -468,7 +469,7 @@ class Board extends React.Component {
                 squaresCopy = updated[1];
                 current += 15;
             }
-            if (bonus_word != 1) {
+            if (bonus_word !== 1) {
                 score *= bonus_word;
                 bonus_word = 1;
                 squaresCopy[bonus_id] = [squaresCopy[bonus_id][0], squaresCopy[bonus_id][1], 1]
@@ -476,18 +477,18 @@ class Board extends React.Component {
             res.push([tmp, score])
             score = 0;
             // Watch horizontally for all words
-            for (var i = 0; i < putLetters.length; i++) {
-                var first = putLetters[i];
+            for (i = 0; i < putLetters.length; i++) {
+                first = putLetters[i];
                 // go all the way left
-                while (((first - 1) % 15) != 14 && typeof squaresCopy[first - 1] != 'undefined' && squaresCopy[first - 1][0] != null) {
+                while (((first - 1) % 15) !== 14 && typeof squaresCopy[first - 1] != 'undefined' && squaresCopy[first - 1][0] !== null) {
                     first -= 1;
                 }
 
-                var tmp = "";
+                tmp = "";
                 // Get whole word horizontally
-                while (((first + 1) % 15) != 0 && typeof squaresCopy[first] != 'undefined' && squaresCopy[first][0] != null) {
+                while (((first + 1) % 15) !== 0 && typeof squaresCopy[first] != 'undefined' && squaresCopy[first][0] != null) {
                     tmp = tmp + squaresCopy[first][0];
-                    var updated = this.countLettersPoint(squaresCopy[first][0], first, squaresCopy);
+                    updated = this.countLettersPoint(squaresCopy[first][0], first, squaresCopy);
                     // ADD BONUS WORD HERE
                     if (squaresCopy[first][2] > 1){
                         bonus_word = squaresCopy[first][2];
@@ -498,7 +499,7 @@ class Board extends React.Component {
                     first += 1;
                 }
                 if (tmp.length > 1) {
-                    if (bonus_word != 1) {
+                    if (bonus_word !== 1) {
                         score *= bonus_word;
                         bonus_word = 1;
                         squaresCopy[bonus_id] = [squaresCopy[bonus_id][0], squaresCopy[bonus_id][1], 1];
@@ -528,8 +529,7 @@ class Board extends React.Component {
             score = this.state.scorePlayer2;
         for (var i = 0; i < res.length; i++) {
             var points = res[i][1];
-            var word = res[i][0]; // USE LATER FOR VERIFICATION
-            console.log(word)
+            // var word = res[i][0]; // USE LATER FOR VERIFICATION
             score += points
             
         }

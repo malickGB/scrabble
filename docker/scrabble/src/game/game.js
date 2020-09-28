@@ -1,7 +1,8 @@
 import React from 'react'
 import Board from '../board/board';
-import Letter from '../letter/letter';
 import Help from '../help/help';
+import './game.css'
+import Informations from '../informations/informations';
 
 class Game extends React.Component{
     getLetters(){
@@ -56,6 +57,7 @@ class Game extends React.Component{
                     squares = {this.state.array}
                     lettersBag = {this.state.lettersBag}
                 />
+                <Informations/>
             </div>
         );
     }

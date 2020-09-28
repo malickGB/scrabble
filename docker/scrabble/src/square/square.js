@@ -1,6 +1,4 @@
 import React from 'react'
-import Letter from '../letter/letter';
-import {getValue} from '../utils/utils.js'
 import './square.css'
 
 
@@ -24,19 +22,19 @@ class Square extends React.Component {
 
     render(){
         var style = {};
-        if (this.state.bonus_letter == 2)
+        if (this.state.bonus_letter === 2)
         {
             style = {backgroundColor: '#34aeeb'}
         }
-        else if (this.state.bonus_letter == 3)
+        else if (this.state.bonus_letter === 3)
         {
             style = {backgroundColor: "#1a5287"}
         }
-        else if (this.state.bonus_word == 2)
+        else if (this.state.bonus_word === 2)
         {
             style = {backgroundColor: "#bf9a21"}
         }
-        else if (this.state.bonus_word == 3)
+        else if (this.state.bonus_word === 3)
         {
             style = {backgroundColor: "#bf3621"}
         }
