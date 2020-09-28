@@ -6,6 +6,7 @@ import Square from '../square/square'
 
 /**
  * TODO:
+ *      Mechanics                                       [X]
  *      - Get availables tile to play                   [X]
  *          - Play horizontallly                        [X]
  *          - Play vertically                           [X]
@@ -13,7 +14,8 @@ import Square from '../square/square'
  *      - Add validation button to end turn             [X]
  *      - Check turn, know if middle only available     [X]
  *      - Save state before playing:                    [X]
- *          - If cancel                                 [x]
+ *          - If cancel                                 [X]
+ *      - Add case not turn 1, and 1 letter played      [X]
  *          
  * 
  *
@@ -21,8 +23,9 @@ import Square from '../square/square'
  *      - Get newly created word                        [X]
  *      - Count total points for newly created word     [X]
  *      - Count Bonus                                   [X]
- *      - Count Bonus Word                              [ ]
+ *      - Count Bonus Word                              [X]
  *      - in case not valid word , cancel input         [ ]
+ *      - Add verification (from dictionnary API?)      [ ]
  */
 class Board extends React.Component {
     bagLetters = { ...this.props.lettersBag };
@@ -312,7 +315,7 @@ class Board extends React.Component {
 
     /**
      * puts letter into the board
-     * TODO : Remove from player's hand
+     * Sets a bonus
      */
     onClickEmptyHandler = (id, bonus_letter, bonus_word) => {
         // remove from player's hand
@@ -454,9 +457,6 @@ class Board extends React.Component {
 
     /**
      * Returns words created by consequence..
-     * FIXME : - Return the bonus_word, or bonus_letter depending on the state.squares
-     *         - Refresh state.squares when done
-     *         - Case putting 1 letter 
      */
     getAdjacentWords = () => {
         var putLetters = this.state.backup.map((elm) => elm[2]).sort((a, b) => a - b);
@@ -465,6 +465,7 @@ class Board extends React.Component {
         var current = putLetters[index];
         var score = 0;
         var bonus_word = 1;
+        var bonus_id = 0;
         var squaresCopy = [...this.state.squares];
         // Plays horizontally
         if ((putLetters[1] - putLetters[0]) < 15) {
@@ -479,24 +480,23 @@ class Board extends React.Component {
             while (((current - 1) % 15) != 14 && typeof squaresCopy[current] != 'undefined' && squaresCopy[current][0] != null) {
                 tmp = squaresCopy[current][0] + tmp;
                 // Remember to Apply bonus word at the end
-                // if (this.state.squares[current][2])
-                //     bonus_word = this.state.squares[current][2];
+                if (squaresCopy[current][2] > 1){
+                    bonus_word = squaresCopy[current][2];
+                    bonus_id = current;
+                }
                 var updated = this.countLettersPoint(squaresCopy[current][0], current, squaresCopy);
                 score += updated[0];
                 squaresCopy = updated[1];
                 current -= 1;
             }
             // Apply bonus & reset value
-            // FIXME : APPLY BONUS WORD
-            // if(bonus_word != 1)
-            // {
-            //     score *= bonus_word;
-            //     bonus_word = 1;
-            //     squaresCopy[current + 1] = [this.state.squares[current + 1][0], this.state.squares[1], 1]
-            //     this.setState({
-            //         squares: copy,
-            //     })
-            // }
+            if(bonus_word != 1)
+            {
+
+                score *= bonus_word;
+                bonus_word = 1;
+                squaresCopy[bonus_id] = [squaresCopy[bonus_id][0], squaresCopy[bonus_id][1], bonus_word]
+            }
             res.push([tmp, score])
 
             // Watch vertically for all letters
@@ -511,27 +511,25 @@ class Board extends React.Component {
                 // Get the whole word vertically
                 while (typeof squaresCopy[first] != 'undefined' && squaresCopy[first][0] != null) {
                     tmp = tmp + squaresCopy[first][0];
-                    // if (this.state.squares[first][2])
-                    //     bonus_word = this.state.squares[first][2];
+                    if (squaresCopy[first][2] > 1){
+                        bonus_id = first
+                        bonus_word = squaresCopy[first][2];
+                    }
                     var updated = this.countLettersPoint(squaresCopy[first][0], first, squaresCopy);
                     score += updated[0];
                     squaresCopy = updated[1];
                     first += 15;
                 }
                 if (tmp.length > 1) {
-                    // if (bonus_word != 1)
-                    // {
-                    //     score *= bonus_word;
-                    //     bonus_word = 1;
-                    //     var copy = [...this.state.squares];
-                    //     copy[current] = [this.state.squares[current][0], this.state.squares[1], 1];
-                    //     this.setState({
-                    //         squares: copy,
-                    //     })
-                    // }          
+                    if (bonus_word != 1)
+                    {
+                        score *= bonus_word;
+                        bonus_word = 1;
+                        squaresCopy[bonus_id] = [squaresCopy[bonus_id][0], squaresCopy[bonus_id][1], 1]
+                    }          
                     res.push([tmp, score]);
-                    score = 0;
                 }
+                score = 0;
             }
         }
         else {
@@ -545,9 +543,18 @@ class Board extends React.Component {
                 tmp = tmp + squaresCopy[current][0];
                 var updated = this.countLettersPoint(squaresCopy[current][0], current, squaresCopy);
                 // ADD BONUS WORD HERE
+                if (squaresCopy[current][2] > 1){
+                    bonus_word = squaresCopy[current][2];
+                    bonus_id = current;
+                }
                 score += updated[0];
                 squaresCopy = updated[1];
                 current += 15;
+            }
+            if (bonus_word != 1) {
+                score *= bonus_word;
+                bonus_word = 1;
+                squaresCopy[bonus_id] = [squaresCopy[bonus_id][0], squaresCopy[bonus_id][1], 1]
             }
             res.push([tmp, score])
             score = 0;
@@ -565,11 +572,20 @@ class Board extends React.Component {
                     tmp = tmp + squaresCopy[first][0];
                     var updated = this.countLettersPoint(squaresCopy[first][0], first, squaresCopy);
                     // ADD BONUS WORD HERE
+                    if (squaresCopy[first][2] > 1){
+                        bonus_word = squaresCopy[first][2];
+                        bonus_id = first;
+                    }
                     score += updated[0];
                     squaresCopy = updated[1];
                     first += 1;
                 }
                 if (tmp.length > 1) {
+                    if (bonus_word != 1) {
+                        score *= bonus_word;
+                        bonus_word = 1;
+                        squaresCopy[bonus_id] = [squaresCopy[bonus_id][0], squaresCopy[bonus_id][1], 1];
+                    }  
                     res.push([tmp, score]);
                 }
                 score = 0;
@@ -578,7 +594,7 @@ class Board extends React.Component {
         this.setState({
             squares: squaresCopy
         })
-        return res
+        return res;
     }
 
     /** 

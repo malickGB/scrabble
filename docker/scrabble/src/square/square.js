@@ -21,11 +21,29 @@ class Square extends React.Component {
     }
 
     render(){
+        var style = null;
+        if (this.state.bonus_letter == 2)
+        {
+            style = {backgroundColor: '#34aeeb'}
+        }
+        else if (this.state.bonus_letter == 3)
+        {
+            style = {backgroundColor: "#1a5287"}
+        }
+        else if (this.state.bonus_word == 2)
+        {
+            style = {backgroundColor: "#bf9a21"}
+        }
+        else if (this.state.bonus_word == 3)
+        {
+            style = {backgroundColor: "#bf3621"}
+        }
         return (
             <td>
-                <button className="square" onClick={this.handleclick.bind(this)}>
+                <button className="square" style={style}  onClick={this.handleclick.bind(this)}>
                     {this.props.letter}
                 </button>
+                
             </td>
         );
     }
