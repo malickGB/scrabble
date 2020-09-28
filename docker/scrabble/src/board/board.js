@@ -2,6 +2,8 @@ import React from 'react';
 import Letter from '../letter/letter';
 import './board.css'
 import Square from '../square/square'
+import {getValue, playerHas} from '../utils/utils'
+import Controls from '../controls/controls';
 
 
 /**
@@ -26,6 +28,11 @@ import Square from '../square/square'
  *      - Count Bonus Word                              [X]
  *      - in case not valid word , cancel input         [ ]
  *      - Add verification (from dictionnary API?)      [ ]
+ * 
+ *      Style
+ *      - Display playable squares                      [ ]
+ *      - Have a better Interface                       [ ]
+ *      - Show scores                                   [X]
  */
 class Board extends React.Component {
     bagLetters = { ...this.props.lettersBag };
@@ -41,101 +48,11 @@ class Board extends React.Component {
             player1Turn: true,
             validSquares: { 'top': null, 'bot': null, 'left': null, 'right': null, 'first': 112 },
             allAvailableSquares: [],
-            turn: 0
+            turn: 0,
+            scorePlayer1:0,
+            scorePlayer2:0
         }
 
-    }
-
-    /**
-     * Returns value of the given letter
-     * @param {String} letter 
-     */
-    getValue(letter) {
-        var value = 0;
-        switch (letter) {
-            case 'A':
-                value = 1;
-                break;
-            case 'B':
-                value = 3;
-                break;
-            case 'C':
-                value = 3;
-                break;
-            case 'D':
-                value = 2;
-                break;
-            case 'E':
-                value = 1;
-                break;
-            case 'F':
-                value = 4;
-                break;
-            case 'G':
-                value = 2;
-                break;
-            case 'H':
-                value = 4;
-                break;
-            case 'I':
-                value = 1;
-                break;
-            case 'J':
-                value = 8;
-                break;
-            case 'K':
-                value = 10;
-                break;
-            case 'L':
-                value = 1;
-                break;
-            case 'M':
-                value = 2;
-                break;
-            case 'N':
-                value = 1;
-                break;
-            case 'O':
-                value = 1;
-                break;
-            case 'P':
-                value = 3;
-                break;
-            case 'Q':
-                value = 8;
-                break;
-            case 'R':
-                value = 1;
-                break;
-            case 'S':
-                value = 1;
-                break;
-            case 'T':
-                value = 1;
-                break;
-            case 'U':
-                value = 1;
-                break;
-            case 'V':
-                value = 4;
-                break;
-            case 'W':
-                value = 10;
-                break;
-            case 'X':
-                value = 10;
-                break;
-            case 'Y':
-                value = 10;
-                break;
-            case 'Z':
-                value = 10;
-                break;
-            default:
-                value = 0;
-                break;
-        }
-        return value;
     }
 
     /**
@@ -169,17 +86,6 @@ class Board extends React.Component {
         return res;
     }
 
-    playerHas(playerLetters, selectedLetter) {
-
-        for (var i = 0; i < playerLetters.length; i++) {
-            if (playerLetters[i][0] === selectedLetter[0]) {
-                if (playerLetters[i][1] === selectedLetter[1]) {
-                    return i;
-                }
-            }
-        }
-        return -1;
-    }
 
     /**
      * Returns true if the board is empty
@@ -252,11 +158,13 @@ class Board extends React.Component {
         }
 
         var validSquares = { 'top': null, 'bot': null, 'left': null, 'right': null, 'first': null };
-        var squares = this.state.squares.slice();
-        var backup = this.state.backup.slice();
+        var squares = [...this.state.squares];
+        var backup = [...this.state.backup];
         // Player starts playing, get all available squares
-        if (this.state.backup.length === 0) {
+        
+        if (backup.length === 0) {
             var allAvailableSquares = [];
+            
             for (var i = 0; i < squares.length; i++) {
                 if (squares[i][0] != null) {
                     var top = i - 15;
@@ -345,13 +253,13 @@ class Board extends React.Component {
             var playercopy = this.state.player1Letters.slice();
             var removeFromPlayer1 = true
             var selected = [this.state.selectedLetter[1], parseInt(letter_id_number)] // parse id to match with player's letters
-            var index = this.playerHas(playercopy, selected);
+            var index = playerHas(playercopy, selected);
 
             // Check who has the letter & delete from his letters
             if (index < 0) {
                 playercopy = this.state.player2Letters.slice();
                 removeFromPlayer1 = false;
-                index = this.playerHas(playercopy, selected);
+                index = playerHas(playercopy, selected);
             }
             playercopy.splice(index, 1);
 
@@ -372,6 +280,14 @@ class Board extends React.Component {
 
     // Displays square
     renderSquare(id, bonus_letter = 1, bonus_word = 1) {
+        var isValidMove = false
+        Object.keys(this.state.validSquares).forEach((key) => {
+            if (id === this.state.validSquares[key])
+                isValidMove = true;
+        })
+        if (this.state.allAvailableSquares.includes(id)){
+            isValidMove = true;
+        }
         return (
             <Square
                 id={id}
@@ -379,6 +295,7 @@ class Board extends React.Component {
                 bonus_letter={bonus_letter}
                 bonus_word={bonus_word}
                 onClickEmpty={this.onClickEmptyHandler}
+                isValidMove={isValidMove}
             />
         );
     }
@@ -446,7 +363,7 @@ class Board extends React.Component {
      * Returns letter value * bonus_letter
      */
     countLettersPoint = (letter, index, squaresCopy) => {
-        var res = this.getValue(letter) * squaresCopy[index][1];
+        var res = getValue(letter) * squaresCopy[index][1];
 
         // Remove bonus because already used
         if (squaresCopy[index][1] != 1) {
@@ -602,13 +519,30 @@ class Board extends React.Component {
      */
     getCreatedWord = () => {
         var res = this.getAdjacentWords();
-        var score = 0
+        var score = 0;
+        if(this.state.player1Turn)
+        {
+            score = this.state.scorePlayer1;
+        }
+        else
+            score = this.state.scorePlayer2;
         for (var i = 0; i < res.length; i++) {
-            var word = res[i];
-            console.log(word);
-            [...word].forEach(letter =>
-                score += this.getValue(letter)
-            )
+            var points = res[i][1];
+            var word = res[i][0]; // USE LATER FOR VERIFICATION
+            console.log(word)
+            score += points
+            
+        }
+        if (this.state.player1Turn){
+            this.setState({
+                scorePlayer1: score
+            })
+        }
+        else
+        {
+            this.setState({
+                scorePlayer2: score
+            }) 
         }
         // FIXME : Add verification from a dictionnary
     }
@@ -627,36 +561,35 @@ class Board extends React.Component {
 
 
     render() {
-        var refreshButton = this.state.player1Turn ? <button onClick={this.refreshPlayer1Letters.bind(this)}>refresh 1</button>
-            : <button onClick={this.refreshPlayer2Letters.bind(this)}>refresh 2</button>;
-        var letters = this.state.player1Turn ? <ul>
+        // var refreshButton = this.state.player1Turn ? <button onClick={this.refreshPlayer1Letters.bind(this)}>refresh 1</button>
+        //     : <button onClick={this.refreshPlayer2Letters.bind(this)}>refresh 2</button>;
+        var getLetters = this.state.player1Turn ? this.refreshPlayer1Letters.bind(this)
+            : this.refreshPlayer2Letters.bind(this);
+        var letters = this.state.player1Turn ? <div className="player-letters">
             {this.state.player1Letters.map((value) => {
 
-                return <li key={"player1-" + this.bagLetters[value[0]] + value}>
+                return <span key={"player1-" + this.bagLetters[value[0]] + value}>
                     <Letter
                         id={"player1-" + value[0] + '-' + value[1]}
                         letter={value[0]}
                         onClickLetter={this.onClickLetterHandler}
                     />
-                </li>
+                </span>
             })}
-        </ul>
-            : <ul>
+        </div>
+            : <div className="player-letters">
                 {this.state.player2Letters.map((value) => {
-                    return <li key={"player2-" + this.bagLetters[value[0]] + value}>
+                    return <span key={"player2-" + this.bagLetters[value[0]] + value}>
                         <Letter
                             id={"player2-" + value[0] + '-' + value[1]}
                             letter={value[0]}
                             onClickLetter={this.onClickLetterHandler}
                         />
-                    </li>
+                    </span>
                 })}
-            </ul>;
-        var endTurn = this.state.backup.length > 0 ? <button onClick={this.onClickEndTurn.bind(this)}>End turn</button> :
-            <button disabled>End turn</button>
-        if (this.state.turn == 0 && this.state.backup.length < 2) {
-            endTurn = <button disabled>End turn</button>
-        }
+            </div>;
+        var endTurn = this.state.backup.length > 0 ? <button className="btn btn-outline-success" onClick={this.onClickEndTurn.bind(this)}>End turn</button> :
+            <button className="btn btn-outline-success" disabled>End turn</button>
         return (
             <div className="game-board">
                 <table>
@@ -955,9 +888,16 @@ class Board extends React.Component {
                     </tbody>
                 </table>
                 {letters}
-                {refreshButton}
-                <button onClick={this.onClickCancel.bind(this)}>Cancel turn</button>
-                {endTurn}
+                <div className="players-scores">
+                    <p>Player 1: {this.state.scorePlayer1}</p>
+                    <p>Player 2: {this.state.scorePlayer2}</p>
+                </div>
+                
+                <Controls 
+                    getLetters = {getLetters}
+                    cancelTurn={this.onClickCancel.bind(this)}
+                    endTurn={endTurn}
+                />
             </div>
         )
     }

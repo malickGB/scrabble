@@ -1,6 +1,7 @@
 import React from 'react'
 import Board from '../board/board';
 import Letter from '../letter/letter';
+import Help from '../help/help';
 
 class Game extends React.Component{
     getLetters(){
@@ -49,10 +50,13 @@ class Game extends React.Component{
 
     render(){
         return (
-            <Board 
-                squares = {this.state.array}
-                lettersBag = {this.state.lettersBag}
-            />
+            <div className="game">
+                <Help/>
+                <Board 
+                    squares = {this.state.array}
+                    lettersBag = {this.state.lettersBag}
+                />
+            </div>
         );
     }
 }

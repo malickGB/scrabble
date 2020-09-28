@@ -1,4 +1,5 @@
 import React from 'react'
+import './letters.css'
 
 class Letter extends React.Component {
     constructor(props){
@@ -22,6 +23,7 @@ class Letter extends React.Component {
             <button 
                 id = {this.props.id}
                 onClick={this.handleClick.bind(this)}
+                className="letter btn btn-outline-light"
             >
             {this.props.letter}
             </button>

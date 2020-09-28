@@ -1,5 +1,7 @@
 import React from 'react'
 import Letter from '../letter/letter';
+import {getValue} from '../utils/utils.js'
+import './square.css'
 
 
 class Square extends React.Component {
@@ -21,7 +23,7 @@ class Square extends React.Component {
     }
 
     render(){
-        var style = null;
+        var style = {};
         if (this.state.bonus_letter == 2)
         {
             style = {backgroundColor: '#34aeeb'}
@@ -38,12 +40,18 @@ class Square extends React.Component {
         {
             style = {backgroundColor: "#bf3621"}
         }
+        if(this.props.isValidMove){
+            Object.assign(style,{border: "2px solid green"})
+        }
+        if(this.props.letter)
+        {
+            Object.assign(style, { backgroundColor: "#76bd89" })
+        }
         return (
             <td>
                 <button className="square" style={style}  onClick={this.handleclick.bind(this)}>
                     {this.props.letter}
-                </button>
-                
+                </button>                
             </td>
         );
     }

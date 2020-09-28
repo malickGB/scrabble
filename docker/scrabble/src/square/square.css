@@ -1,0 +1,21 @@
+.square{
+    background: #ffffff;
+    /* border: 1px solid black; */
+    float: left;
+    font-size: 28px;
+    font-weight: normal;
+    line-height: 34px;
+    height: 40px;
+    margin-right: -1px;
+    /* margin-top: -1px;  */
+    text-align: center;
+    width: 40px;
+    border: none;
+    border-radius: 2px;
+    background-color: #9ff5b6;
+    color: darkgreen;
+}
+
+.square:hover{
+    background-color: #57fc96;
+}
