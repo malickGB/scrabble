@@ -56,6 +56,7 @@ class Game extends React.Component{
                 <Board 
                     squares = {this.state.array}
                     lettersBag = {this.state.lettersBag}
+                    socket = {this.props.socket}
                 />
                 <Informations/>
             </div>
