@@ -18,7 +18,7 @@ import Controls from '../controls/controls';
  *      - Save state before playing:                    [X]
  *          - If cancel                                 [X]
  *      - Add case not turn 1, and 1 letter played      [X]
- *      - Pass turn when get new letters                [ ]
+ *      - Pass turn when get new letters                [X]
  * 
  *
  *  ... Implement rules                                 [ ]
@@ -28,7 +28,7 @@ import Controls from '../controls/controls';
  *      - Count Bonus Word                              [X]
  *      - in case not valid word , cancel input         [ ]
  *      - Add verification (from dictionnary API?)      [ ]
- *      - Add SCRABBLE +50                              [ ]
+ *      - Add SCRABBLE +50                              [X]
  * 
  *      Style
  *      - Display playable squares                      [X]
@@ -41,7 +41,8 @@ class Board extends React.Component {
         super(props);
         this.props.socket.on("initPlayers", (turn) => {
             this.setState({
-                player1Turn: turn,       
+                player1Turn: turn,
+                isPlayerTurn: true  
             })
         })
         this.state = {
@@ -56,6 +57,7 @@ class Board extends React.Component {
             turn: 0,
             scorePlayer1:0,
             scorePlayer2:0,
+            isPlayerTurn: false
         }
     }
 
@@ -86,7 +88,7 @@ class Board extends React.Component {
                 bag[letter] -= 1;
             }
         }
-        this.bagLetters = bag
+        this.bagLetters = bag;
         return res;
     }
 
@@ -308,20 +310,50 @@ class Board extends React.Component {
     refreshPlayer1Letters = () => {
         if (this.state.player1Turn) {
             var currentLetters = this.state.player1Letters.slice();
-            this.setState({
-                player1Letters: this.getRandomLetters(currentLetters)
-            });
+            if(this.state.turn !== 0)
+            {
+                this.setState({
+                    player1Letters: this.getRandomLetters(currentLetters),
+                    selectedLetter: null,
+                    backup: [],
+                    validSquares: { 'top': null, 'bot': null, 'left': null, 'right': null, 'first': null },
+                    turn: this.state.turn + 1,
+                    isPlayerTurn: !this.state.isPlayerTurn
+                });
+                this.props.socket.emit("endTurn", this.state.squares);
+            }
+            else{
+                this.setState({
+                    player1Letters: this.getRandomLetters(currentLetters)
+                })
+            }
         }
     }
+    
 
     refreshPlayer2Letters = () => {
         if (!this.state.player1Turn) {
             var currentLetters = this.state.player2Letters.slice();
-            this.setState({
-                player2Letters: this.getRandomLetters(currentLetters)
-            });
+            if(this.state.turn !== 0)
+            {
+                this.setState({
+                    player2Letters: this.getRandomLetters(currentLetters),
+                    selectedLetter: null,
+                    backup: [],
+                    validSquares: { 'top': null, 'bot': null, 'left': null, 'right': null, 'first': null },
+                    turn: this.state.turn + 1,
+                    isPlayerTurn: !this.state.isPlayerTurn
+                });
+            this.props.socket.emit("endTurn", this.state.squares);
+            }
+            else{
+                this.setState({
+                    player2Letters: this.getRandomLetters(currentLetters)
+                })
+            }
         }
     }
+
 
     onClickLetterHandler = (id, letter) => {
         this.getValidSquares();
@@ -535,6 +567,23 @@ class Board extends React.Component {
             // var word = res[i][0]; // USE LATER FOR VERIFICATION
             score += points
         }
+
+        // Get new letters if scrabble , adds extra  50 points
+        if(this.state.backup.length === 7)
+        {
+            score += 50;
+            if (this.state.player1Turn)
+            {
+                this.setState({
+                    player1Letters: this.getRandomLetters()
+                })
+            }
+            else {
+                this.setState({
+                    player2Letters: this.getRandomLetters()
+                })
+            }
+        }
         if (this.state.player1Turn){
             this.props.socket.emit("newScore", "player1", score)
             this.setState({
@@ -556,30 +605,31 @@ class Board extends React.Component {
     onClickEndTurn = () => {
         this.getCreatedWord();
         this.setState({
-            player1Turn: !this.state.player1Turn,
             selectedLetter: null,
             backup: [],
             validSquares: { 'top': null, 'bot': null, 'left': null, 'right': null, 'first': null },
             turn: this.state.turn + 1,
+            isPlayerTurn: !this.state.isPlayerTurn
         })
+
         this.props.socket.emit("endTurn",this.state.squares);
     }
 
-    render() {
-        this.props.socket.on("refreshScore", (data) => {
-            console.log("refreshed")
-            this.setState({
-                scorePlayer1: data["player1"],
-                scorePlayer2: data["player2"],
-                squares: data["board"],  
-            })
-        });
+    newTurnListener = (data) =>{
+        console.log("refreshed",data)
+        this.setState({
+            scorePlayer1: data["player1"],
+            scorePlayer2: data["player2"],
+            squares: data["board"],
+            isPlayerTurn: !this.state.isPlayerTurn
+        })
+    }
 
+    render() {
         var getLetters = this.state.player1Turn ? <button  id="getLettersButton" className="btn btn-outline-primary" onClick={this.refreshPlayer1Letters.bind(this)}>Get Letters</button>
             : <button className="btn btn-outline-primary"  onClick={this.refreshPlayer2Letters.bind(this)}>Get Letters</button>;
-        var letters = this.state.player1Turn ? <div className="player-letters">
+        var player1Letters =  this.state.isPlayerTurn ? <div className="player-letters">
             {this.state.player1Letters.map((value) => {
-
                 return <span key={"player1-" + this.bagLetters[value[0]] + value}>
                     <Letter
                         id={"player1-" + value[0] + '-' + value[1]}
@@ -588,8 +638,19 @@ class Board extends React.Component {
                     />
                 </span>
             })}
-        </div>
-            : <div className="player-letters">
+        </div> :
+            <div className="player-letters">
+                {this.state.player1Letters.map((value) => {
+                    return <span key={"player1-" + this.bagLetters[value[0]] + value}>
+                        <Letter
+                            id={"player1-" + value[0] + '-' + value[1]}
+                            letter={value[0]}
+                            disabled
+                        />
+                    </span>
+                })}
+            </div>;
+        var player2Letters = this.state.isPlayerTurn ?  <div className="player-letters">
                 {this.state.player2Letters.map((value) => {
                     return <span key={"player2-" + this.bagLetters[value[0]] + value}>
                         <Letter
@@ -599,12 +660,22 @@ class Board extends React.Component {
                         />
                     </span>
                 })}
-            </div>;
+            </div> : 
+            <div className="player-letters">
+                {this.state.player2Letters.map((value) => {
+                    return <span key={"player2-" + this.bagLetters[value[0]] + value}>
+                        <Letter
+                            id={"player2-" + value[0] + '-' + value[1]}
+                            letter={value[0]}
+                            disabled
+                        />
+                    </span>
+                })}
+            </div>
+        ;
         var endTurn = this.state.backup.length > 0 ? <button id="endTurnButton" className="btn btn-outline-success" onClick={this.onClickEndTurn.bind(this)}>End turn</button> :
             <button className="btn btn-outline-success" disabled>End turn</button>
         var cancelTurn = <button id="cancelTurnButton" className="btn btn-outline-danger" onClick={this.onClickCancel.bind(this)}>Cancel</button>
- 
-        
         return (
             <div className="game-board">
                 <table>
@@ -902,16 +973,19 @@ class Board extends React.Component {
                         </tr>
                     </tbody>
                 </table>
-                {letters}
+                {player1Letters}
+                {player2Letters}
                 <div className="players-scores">
                     <p>Player 1: {this.state.scorePlayer1}</p>
                     <p>Player 2: {this.state.scorePlayer2}</p>
                 </div>
                 <Controls 
+                    newTurnListener={this.newTurnListener.bind(this)}
                     getLetters = {getLetters}
                     cancelTurn={cancelTurn}
                     endTurn={endTurn}
                     socket={this.props.socket}
+                    turn={this.state.turn}
                 />
             </div>
         )

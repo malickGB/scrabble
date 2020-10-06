@@ -9,8 +9,9 @@ function Controls(props) {
         props.socket.on("initPlayers", () => {
             setShow(prevState => !prevState);
         });
-        props.socket.on("refreshScore", () => {
+        props.socket.on("refreshScore", (data) => {
             setShow(prevState => !prevState);
+            props.newTurnListener(data);
         });
         return () => props.socket.disconnect();
     }, [props.socket])
@@ -19,10 +20,12 @@ function Controls(props) {
     {
         return (    
             <div className="controls">
-                {props.getLetters}
+                <span onClick={ () => props.turn !== 0 ?  setShow(prevState => !prevState) : null}>
+                    {props.getLetters}
+                </span>
                 {props.cancelTurn}
                 <span onClick={() => setShow(prevState => !prevState)}>
-                {props.endTurn}
+                    {props.endTurn}
                 </span>
             </div>
         )
