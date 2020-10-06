@@ -64,18 +64,25 @@ class Board extends React.Component {
     /**
      * Gives player a new set of letters
      * Put his letters back to the set
+     * 
      * @param {Array} currentLetters 
+     * @param {Bool} complete : if player has played, completes letters to 7 
      */
-    getRandomLetters(currentLetters = []) {
+    getRandomLetters(currentLetters = [], complete = false) {
         //get keys whose value > 0  (contained in the bag)
         var bag = this.bagLetters;
-        currentLetters.forEach(element => {
-            bag[element[0]] += 1;
-        });
-        // Put back player's letters in the bag
+        if (!complete)
+        {
+            // Put back player's letters in the bag
+            currentLetters.forEach(element => {
+                bag[element[0]] += 1;
+            });
+            var res = [];
+        }
+        else
+            res = [...currentLetters];
         var remainingLetters = Object.keys(bag)
             .filter((key) => bag[key] > 0)
-        var res = [];
         for (; Object.keys(remainingLetters).length > 0 && res.length < 7;) {
             var randIndex = Math.floor(Math.random() * remainingLetters.length);
             var letter = remainingLetters[randIndex];
@@ -586,18 +593,23 @@ class Board extends React.Component {
         }
         if (this.state.player1Turn){
             this.props.socket.emit("newScore", "player1", score)
+            var completedLetters = this.getRandomLetters(this.state.player1Letters, true)
             this.setState({
+                player1Letters: completedLetters,
                 scorePlayer1: score
             })
 
         }
         else
         {
+            completedLetters = this.getRandomLetters(this.state.player2Letters, true)
             this.props.socket.emit("newScore", "player2", score)
             this.setState({
-                scorePlayer2: score
+                player2Letters: completedLetters,
+                scorePlayer2: score,
             }) 
         }
+        
         // FIXME : Add verification from a dictionnary
     }
 
@@ -616,7 +628,6 @@ class Board extends React.Component {
     }
 
     newTurnListener = (data) =>{
-        console.log("refreshed",data)
         this.setState({
             scorePlayer1: data["player1"],
             scorePlayer2: data["player2"],
