@@ -133,7 +133,7 @@ class Board extends React.Component {
         }
         var left = backup[backup.length - 1][2] - 1;
         if (typeof squares[left] == 'undefined' || squares[left][0] != null || left % 15 === 14) {
-            while (typeof squares[left] != 'undefined' && squares[left][0] != null) {
+            while (typeof squares[left] != 'undefined' && squares[left][0] != null && left % 15 !== 14) {
                 left -= 1;
             }
             if (left < 0 || (left % 15) === 14)
@@ -141,7 +141,8 @@ class Board extends React.Component {
         }
         var right = backup[backup.length - 1][2] + 1;
         if (typeof squares[right] == 'undefined' || squares[right][0] != null || right % 15 === 0) {
-            while (typeof squares[right] != 'undefined' && squares[right][0] != null) {
+            while (typeof squares[right] != 'undefined' && squares[right][0] != null && right % 15 !== 0) {
+                
                 right += 1;
             }
             if ((right % 15) === 0)
@@ -188,9 +189,9 @@ class Board extends React.Component {
                         allAvailableSquares.push(top);
                     if (typeof squares[bot] != 'undefined' && squares[bot][0] == null)
                         allAvailableSquares.push(bot);
-                    if (typeof squares[left] != 'undefined' && squares[left][0] == null && left % 15 != 14)
+                    if (typeof squares[left] != 'undefined' && squares[left][0] == null && left % 15 !== 14)
                         allAvailableSquares.push(left);
-                    if (typeof squares[right] != 'undefined' && squares[right][0] == null && right % 15 != 0)
+                    if (typeof squares[right] != 'undefined' && squares[right][0] == null && right % 15 !== 0)
                         allAvailableSquares.push(right);
                 }
             }
