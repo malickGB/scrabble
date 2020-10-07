@@ -36,7 +36,7 @@ import Controls from '../controls/controls';
  *      - Show scores                                   [X]
  */
 class Board extends React.Component {
-    bagLetters = { ...this.props.lettersBag };
+    bagLetters = { ...this.props.lettersBag};
     constructor(props) {
         super(props);
         this.props.socket.on("initPlayers", (turn) => {
@@ -91,10 +91,12 @@ class Board extends React.Component {
                 res.push([letter, remaining - 1]);
                 // Change amout of remaining letters
                 remainingLetters = Object.keys(bag)
-                    .filter((key) => bag[key] >= 0)
+                    .filter((key) => bag[key] > 0)
                 bag[letter] -= 1;
             }
         }
+        console.log("after: ", remainingLetters.length, remainingLetters)
+
         this.bagLetters = bag;
         return res;
     }
@@ -317,7 +319,7 @@ class Board extends React.Component {
     refreshPlayer1Letters = () => {
         if (this.state.player1Turn) {
             var currentLetters = this.state.player1Letters.slice();
-            if(this.state.turn !== 0)
+            if(this.state.turn !== 0 || (this.state.turn === 0 && this.state.player1Letters.length !== 0))
             {
                 this.setState({
                     player1Letters: this.getRandomLetters(currentLetters),
@@ -327,7 +329,7 @@ class Board extends React.Component {
                     turn: this.state.turn + 1,
                     isPlayerTurn: !this.state.isPlayerTurn
                 });
-                this.props.socket.emit("endTurn", this.state.squares);
+                this.props.socket.emit("endTurn", this.state.squares, this.bagLetters);
             }
             else{
                 this.setState({
@@ -336,12 +338,11 @@ class Board extends React.Component {
             }
         }
     }
-    
 
     refreshPlayer2Letters = () => {
         if (!this.state.player1Turn) {
             var currentLetters = this.state.player2Letters.slice();
-            if(this.state.turn !== 0)
+            if (this.state.turn !== 0 || (this.state.turn === 0 && this.state.player2Letters.length !== 0))
             {
                 this.setState({
                     player2Letters: this.getRandomLetters(currentLetters),
@@ -351,7 +352,7 @@ class Board extends React.Component {
                     turn: this.state.turn + 1,
                     isPlayerTurn: !this.state.isPlayerTurn
                 });
-            this.props.socket.emit("endTurn", this.state.squares);
+            this.props.socket.emit("endTurn", this.state.squares, this.bagLetters);
             }
             else{
                 this.setState({
@@ -577,20 +578,8 @@ class Board extends React.Component {
 
         // Get new letters if scrabble , adds extra  50 points
         if(this.state.backup.length === 7)
-        {
             score += 50;
-            if (this.state.player1Turn)
-            {
-                this.setState({
-                    player1Letters: this.getRandomLetters()
-                })
-            }
-            else {
-                this.setState({
-                    player2Letters: this.getRandomLetters()
-                })
-            }
-        }
+        
         if (this.state.player1Turn){
             this.props.socket.emit("newScore", "player1", score)
             var completedLetters = this.getRandomLetters(this.state.player1Letters, true)
@@ -609,7 +598,7 @@ class Board extends React.Component {
                 scorePlayer2: score,
             }) 
         }
-        
+
         // FIXME : Add verification from a dictionnary
     }
 
@@ -624,10 +613,12 @@ class Board extends React.Component {
             isPlayerTurn: !this.state.isPlayerTurn
         })
 
-        this.props.socket.emit("endTurn",this.state.squares);
+        this.props.socket.emit("endTurn",this.state.squares, this.bagLetters);
     }
 
     newTurnListener = (data) =>{
+        this.bagLetters = data["letters"];
+        console.log("updating letters")
         this.setState({
             scorePlayer1: data["player1"],
             scorePlayer2: data["player2"],
@@ -997,6 +988,9 @@ class Board extends React.Component {
                     endTurn={endTurn}
                     socket={this.props.socket}
                     turn={this.state.turn}
+                    player1Turn={this.state.player1Turn}
+                    player1Letters={this.state.player1Letters}
+                    player2Letters={this.state.player2Letters}
                 />
             </div>
         )

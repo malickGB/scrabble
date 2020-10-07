@@ -11,7 +11,7 @@ app.get("/", (req,res)=>{
 
 let players = [];
 let current_turn = true; //for player 1, false otherwise
-let data = { "player1": 0, "player2": 0, "board": Array(225).fill[null, null, null]}
+let data = { "player1": 0, "player2": 0, "board": Array(225).fill[null, null, null], "letters": {}}
 
 
 io.on("connection", (socket) =>{
@@ -21,8 +21,9 @@ io.on("connection", (socket) =>{
     {
         players[0].emit("initPlayers", true)
     }
-    socket.on("endTurn",(board) =>{
-        data["board"] = board
+    socket.on("endTurn",(board, letters) =>{
+        data["board"] = board;
+        data["letters"] = letters;
         socket.broadcast.emit("refreshScore", data)
     })
 

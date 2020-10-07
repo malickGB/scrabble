@@ -5,22 +5,26 @@ import './controls.css'
 function Controls(props) {
     const [show, setShow] = useState(false);
 
+    let socket = props.socket;
+    let listener = props.newTurnListener;
     useEffect(() => {
-        props.socket.on("initPlayers", () => {
+        socket.on("initPlayers", () => {
             setShow(prevState => !prevState);
         });
-        props.socket.on("refreshScore", (data) => {
+        socket.on("refreshScore", (data) => {
             setShow(prevState => !prevState);
-            props.newTurnListener(data);
+            listener(data);
         });
         return () => props.socket.disconnect();
-    }, [props.socket])
+    }, [socket])
 
     if(show)
     {
         return (    
             <div className="controls">
-                <span onClick={ () => props.turn !== 0 ?  setShow(prevState => !prevState) : null}>
+                {/* <span onClick={ () => (props.turn !== 0) || (props.turn === 0 && ) ?  setShow(prevState => !prevState) : null}> */}
+                <span onClick={() => (props.turn !== 0) || (props.turn === 0 && props.player1Turn && props.player1Letters.length > 0) || (props.turn === 0 && !props.player1Turn && props.player2Letters.length > 0) 
+                ?  setShow(prevState => !prevState) : null}>
                     {props.getLetters}
                 </span>
                 {props.cancelTurn}
