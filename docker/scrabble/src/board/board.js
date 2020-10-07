@@ -95,8 +95,6 @@ class Board extends React.Component {
                 bag[letter] -= 1;
             }
         }
-        console.log("after: ", remainingLetters.length, remainingLetters)
-
         this.bagLetters = bag;
         return res;
     }
@@ -190,9 +188,9 @@ class Board extends React.Component {
                         allAvailableSquares.push(top);
                     if (typeof squares[bot] != 'undefined' && squares[bot][0] == null)
                         allAvailableSquares.push(bot);
-                    if (typeof squares[left] != 'undefined' && squares[left][0] == null)
+                    if (typeof squares[left] != 'undefined' && squares[left][0] == null && left % 15 != 14)
                         allAvailableSquares.push(left);
-                    if (typeof squares[right] != 'undefined' && squares[right][0] == null)
+                    if (typeof squares[right] != 'undefined' && squares[right][0] == null && right % 15 != 0)
                         allAvailableSquares.push(right);
                 }
             }
