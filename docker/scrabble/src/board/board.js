@@ -83,18 +83,25 @@ class Board extends React.Component {
             res = [...currentLetters];
         var remainingLetters = Object.keys(bag)
             .filter((key) => bag[key] > 0)
-        for (; Object.keys(remainingLetters).length > 0 && res.length < 7;) {
+        console.log(remainingLetters)
+        for (; remainingLetters.length > 0 && res.length < 7;) {
             var randIndex = Math.floor(Math.random() * remainingLetters.length);
             var letter = remainingLetters[randIndex];
+                
             if (bag[letter] > 0) {
                 var remaining = bag[letter];
                 res.push([letter, remaining - 1]);
                 // Change amout of remaining letters
+                bag[letter] -= 1;
                 remainingLetters = Object.keys(bag)
                     .filter((key) => bag[key] > 0)
-                bag[letter] -= 1;
             }
         }
+        // FIXME: Handle finishing game
+        // if(remainingLetters == [])
+        // {
+        //     this.bagLetters = null;  
+        // }
         this.bagLetters = bag;
         return res;
     }
@@ -142,7 +149,6 @@ class Board extends React.Component {
         var right = backup[backup.length - 1][2] + 1;
         if (typeof squares[right] == 'undefined' || squares[right][0] != null || right % 15 === 0) {
             while (typeof squares[right] != 'undefined' && squares[right][0] != null && right % 15 !== 0) {
-                
                 right += 1;
             }
             if ((right % 15) === 0)
@@ -360,7 +366,6 @@ class Board extends React.Component {
             }
         }
     }
-
 
     onClickLetterHandler = (id, letter) => {
         this.getValidSquares();
