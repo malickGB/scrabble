@@ -19,6 +19,8 @@ import Controls from '../controls/controls';
  *          - If cancel                                 [X]
  *      - Add case not turn 1, and 1 letter played      [X]
  *      - Pass turn when get new letters                [X]
+ *      - Handle game finish                            [ ]
+ *      - Create a lobby                                [ ]
  * 
  *
  *  ... Implement rules                                 [ ]
