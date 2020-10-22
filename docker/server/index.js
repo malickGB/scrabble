@@ -3,13 +3,13 @@ const { clearLine } = require('readline');
 const app = require('express')();
 const server = require('http').createServer(app);
 const io = require('socket.io')(server);
-
+const fs = require("fs");
 const port = process.env.PORT || 8080;
 
 
 let players = [];
 let current_turn = true; //for player 1, false otherwise
-rooms_data = [];
+let rooms_data = [];
 
 io.on("connection", (socket) =>{
 
@@ -34,6 +34,17 @@ io.on("connection", (socket) =>{
             rooms_data[roomId] = { "player1": 0, "player2": 0, "board": Array(225).fill[null, null, null], "letters": {} }
         }
     })
+
+    // Word validation
+    // FIXME DEFINE these events in front end
+    socket.on('checkWord', (word) =>{
+        fs.readFile('./dico.txt', (err, data) => {
+            if (data.includes(word))
+                socket.emit('validWord');
+            else
+                socket.emit('InvalidWord')
+        })
+    })
     
     // FIXME : define roomId in front-end
     socket.on("endTurn",(board, letters, roomId) =>{
@@ -55,7 +66,12 @@ io.on("connection", (socket) =>{
         var roomsSocketIn = Object.keys(socket.rooms);
         roomsSocketIn.forEach( (room )=>{ 
             socket.leave(room) ; 
-            io.to(room).emit('LeftGame'); // FIXME: do something with this event  
+
+            // notify remaining player that he is alone
+            io.to(room).emit('LeftGame'); // FIXME: do something with this event
+
+            // removes room from array
+            rooms_data.splice(rooms_data.indexOf(roomId), 1) 
         })
     })
 })
