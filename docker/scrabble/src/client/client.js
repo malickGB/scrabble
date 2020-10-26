@@ -14,14 +14,17 @@ var socket = socketIOClient(ENDPOINT);
 function Client(){
 
     const [isPlaying, setIsPlaying] = useState(false);
+    const [roomId, setRoomId] = useState(null);
 
     useEffect(() => {
-        socket.on('GameStart', () =>{
-           setIsPlaying(prevState => !prevState);
-           Swal.close()
+        socket.on('GameStart', (id) =>{
+            setRoomId(id);  
+            setIsPlaying(prevState => !prevState);
+            Swal.close()
         })
     })
     
+
     if (!isPlaying){
         return(
             <div className="lobby">
@@ -40,6 +43,7 @@ function Client(){
             <div>
                 <Game
                     socket={socket}
+                    roomId={roomId}
                 />
             </div>
         )
@@ -60,9 +64,7 @@ function createGameHandler(){
         if (res.isConfirmed) {
             socket.emit('leftRoomCreation', roomId);
         }
-        console.log()
     })
-    return roomId;
 }
 
 function joinGameHandler(){

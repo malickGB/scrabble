@@ -4,7 +4,6 @@ import './controls.css'
 
 function Controls(props) {
     const [show, setShow] = useState(false);
-
     let socket = props.socket;
     let listener = props.newTurnListener;
     useEffect(() => {
@@ -22,13 +21,11 @@ function Controls(props) {
     {
         return (    
             <div className="controls">
-                {/* <span onClick={ () => (props.turn !== 0) || (props.turn === 0 && ) ?  setShow(prevState => !prevState) : null}> */}
-                <span onClick={() => (props.turn !== 0) || (props.turn === 0 && props.player1Turn && props.player1Letters.length > 0) || (props.turn === 0 && !props.player1Turn && props.player2Letters.length > 0) 
-                ?  setShow(prevState => !prevState) : null}>
+                <span>
                     {props.getLetters}
                 </span>
                 {props.cancelTurn}
-                <span onClick={() => setShow(prevState => !prevState)}>
+                <span>
                     {props.endTurn}
                 </span>
             </div>
