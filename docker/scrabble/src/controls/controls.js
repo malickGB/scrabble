@@ -4,18 +4,24 @@ import './controls.css'
 
 function Controls(props) {
     const [show, setShow] = useState(false);
-    let socket = props.socket;
-    let listener = props.newTurnListener;
+    const listener = props.newTurnListener;
+    
     useEffect(() => {
-        socket.on("initPlayers", () => {
+        var tmp = show;
+        props.socket.on("initPlayers", () => {
             setShow(prevState => !prevState);
+            
         });
-        socket.on("refreshScore", (data) => {
+        props.socket.on("refreshScore", (data) => {
             setShow(prevState => !prevState);
             listener(data);
         });
-        return () => props.socket.disconnect();
-    }, [socket])
+        props.socket.on("disconnect", () => {
+            props.socket.disconnect();
+        })
+        
+    }, [props.socket]) 
+
 
     if(show)
     {

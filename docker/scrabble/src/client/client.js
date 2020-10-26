@@ -15,11 +15,13 @@ function Client(){
 
     const [isPlaying, setIsPlaying] = useState(false);
     const [roomId, setRoomId] = useState(null);
+    const [opponentId, setOpponentId] = useState(null)
 
     useEffect(() => {
-        socket.on('GameStart', (id) =>{
+        socket.on('GameStart', (id, opponentId) =>{
             setRoomId(id);  
             setIsPlaying(prevState => !prevState);
+            setOpponentId(opponentId);
             Swal.close()
         })
     })
@@ -44,6 +46,7 @@ function Client(){
                 <Game
                     socket={socket}
                     roomId={roomId}
+                    opponentId={opponentId}
                 />
             </div>
         )

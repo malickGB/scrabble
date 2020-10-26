@@ -58,6 +58,7 @@ class Game extends React.Component{
                     lettersBag = {this.state.lettersBag}
                     socket = {this.props.socket}
                     roomId = {this.props.roomId}
+                    opponentId={this.props.opponentId}
                 />
                 <Informations/>
             </div>

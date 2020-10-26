@@ -38,11 +38,21 @@ io.on("connection", (socket) =>{
             if (io.sockets.adapter.rooms[roomId] && Object.keys(connectedSockets).length < 2){
                 console.log("Player joined room "+ roomId);
                 socket.join(roomId);
-                io.to(roomId).emit('GameStart', roomId);
-                var player1Id= Object.keys(connectedSockets)[0];
+                var player1Id = Object.keys(connectedSockets)[0];
+                var player2Id = Object.keys(connectedSockets)[1];
+
+                // Send opponent Id to each, allows to track score
+                io.to(player1Id).emit('GameStart', roomId, player2Id);
+                io.to(player2Id).emit('GameStart', roomId, player1Id);
+                
+
+                data = {}
+                data[player1Id] = 0;
+                data[player2Id] = 0;
+
                 io.sockets.connected[player1Id].emit('initPlayers');
                 console.log("sent to player 1")
-                rooms_data[roomId] = { "player1": 0, "player2": 0, "board": Array(225).fill[null, null, null], "letters": {} }
+                rooms_data[roomId] = Object.assign({}, data,  { "board": Array(225).fill[null, null, null], "letters": {} })
             }
         }
     })
@@ -62,9 +72,7 @@ io.on("connection", (socket) =>{
         var response = {"isValid": true};
         for (var i = 0; i < words.length; i++) {
             var arr = (words_dict[words[i].length])
-            console.log(words[i], words_dict[words[i].length]);
             if(typeof(arr) !== "undefined" && !arr.includes(String(words[i]))){
-
                 response = { "isValid": false };
                 callback(response);
                 break;
@@ -77,11 +85,10 @@ io.on("connection", (socket) =>{
     })
 
     //Updates scores
-    // FIXME send roomId
-    socket.on("newScore",(player,score, roomId) => {
+    socket.on("newScore",(playerId,score, roomId) => {
         data = rooms_data[roomId];
-        console.log(data);
-        data[player] = score;
+        console.log(playerId);
+        data[playerId] = score;
     })
 
     // Remove player from array
