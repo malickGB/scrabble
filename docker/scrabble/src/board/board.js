@@ -324,7 +324,7 @@ class Board extends React.Component {
                     backup: [],
                     validSquares: { 'top': null, 'bot': null, 'left': null, 'right': null, 'first': null },
                     turn: this.state.turn + 1,
-                    isPlayerTurn: !this.state.isPlayerTurn
+                    // isPlayerTurn: !this.state.isPlayerTurn
                 });
                 this.props.socket.emit("endTurn", this.state.squares, this.bagLetters, this.state.roomId, true);
             }
@@ -536,8 +536,6 @@ class Board extends React.Component {
             score += points
         }
 
-        console.log(words);
-
         const checkValid = new Promise(resolve => {
             this.props.socket.emit('checkWords', words, (res) => {
                 resolve(res);
@@ -565,10 +563,8 @@ class Board extends React.Component {
                 return false;
             }
         })
-        // FIXME : Add verification from a dictionnary
     }
 
-    // Wait till variable is defined : FIXME
     onClickEndTurn = async () => {
         var isValid = await this.getCreatedWord();        
         if(isValid)
@@ -578,7 +574,7 @@ class Board extends React.Component {
                 backup: [],
                 validSquares: { 'top': null, 'bot': null, 'left': null, 'right': null, 'first': null },
                 turn: this.state.turn + 1,
-                isPlayerTurn: !this.state.isPlayerTurn,
+                // isPlayerTurn: !this.state.isPlayerTurn,
             })
             this.props.socket.emit("endTurn", this.state.squares, this.bagLetters, this.state.roomId);
         }
@@ -586,14 +582,12 @@ class Board extends React.Component {
 
     newTurnListener = (data) =>{
         this.bagLetters = data["letters"];
-        let turn = this.state.isPlayerTurn;
-        console.log(data);
-        console.log(turn)
+        console.log("here");
         this.setState({
+            isPlayerTurn: !this.state.isPlayerTurn,
             scorePlayer: data[this.props.socket.id],
             scoreOpponent: data[this.props.opponentId],
-            squares: data["board"],
-            isPlayerTurn: !turn
+            squares: data["board"]
         })
     }
 
