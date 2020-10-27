@@ -6,6 +6,7 @@ import {getValue, playerHas} from '../utils/utils'
 import Controls from '../controls/controls';
 
 
+
 /**
  * TODO:
  *      Mechanics                                       [X]
@@ -18,7 +19,9 @@ import Controls from '../controls/controls';
  *      - Save state before playing:                    [X]
  *          - If cancel                                 [X]
  *      - Add case not turn 1, and 1 letter played      [X]
- *          
+ *      - Pass turn when get new letters                [X]
+ *      - Handle game finish                            [ ]
+ *      - Create a lobby                                [ ]
  * 
  *
  *  ... Implement rules                                 [ ]
@@ -28,7 +31,7 @@ import Controls from '../controls/controls';
  *      - Count Bonus Word                              [X]
  *      - in case not valid word , cancel input         [ ]
  *      - Add verification (from dictionnary API?)      [ ]
- *      - Add SCRABBLE +50                              [ ]
+ *      - Add SCRABBLE +50                              [X]
  * 
  *      Style
  *      - Display playable squares                      [X]
@@ -36,54 +39,72 @@ import Controls from '../controls/controls';
  *      - Show scores                                   [X]
  */
 class Board extends React.Component {
-    bagLetters = { ...this.props.lettersBag };
-
+    bagLetters = { ...this.props.lettersBag};
     constructor(props) {
         super(props);
+        
         this.state = {
             squares: this.props.squares,
-            player1Letters: [],
-            player2Letters: [],
+            playerLetters: [],
             selectedLetter: null,
             backup: [],
-            player1Turn: true,
             validSquares: { 'top': null, 'bot': null, 'left': null, 'right': null, 'first': 112 },
             allAvailableSquares: [],
             turn: 0,
-            scorePlayer1:0,
-            scorePlayer2:0
-        }
+            scorePlayer:0,
+            scoreOpponent:0,
+            isPlayerTurn: false,
+            roomId: this.props.roomId,
 
+        }
+        this.props.socket.on("initPlayers", (turn) => {
+            this.setState({
+                isPlayerTurn: true
+            })
+        })
     }
 
     /**
      * Gives player a new set of letters
      * Put his letters back to the set
+     * 
      * @param {Array} currentLetters 
+     * @param {Bool} complete : if player has played, completes letters to 7 
      */
-    getRandomLetters(currentLetters = []) {
+    getRandomLetters(currentLetters = [], complete = false) {
         //get keys whose value > 0  (contained in the bag)
         var bag = this.bagLetters;
-        currentLetters.forEach(element => {
-            bag[element[0]] += 1;
-        });
-        // Put back player's letters in the bag
+        if (!complete)
+        {
+            // Put back player's letters in the bag
+            currentLetters.forEach(element => {
+                bag[element[0]] += 1;
+            });
+            var res = [];
+        }
+        else
+            res = [...currentLetters];
         var remainingLetters = Object.keys(bag)
             .filter((key) => bag[key] > 0)
-        var res = [];
-        for (; Object.keys(remainingLetters).length > 0 && res.length < 7;) {
+        for (; remainingLetters.length > 0 && res.length < 7;) {
             var randIndex = Math.floor(Math.random() * remainingLetters.length);
             var letter = remainingLetters[randIndex];
+                
             if (bag[letter] > 0) {
                 var remaining = bag[letter];
                 res.push([letter, remaining - 1]);
                 // Change amout of remaining letters
-                remainingLetters = Object.keys(bag)
-                    .filter((key) => bag[key] >= 0)
                 bag[letter] -= 1;
+                remainingLetters = Object.keys(bag)
+                    .filter((key) => bag[key] > 0)
             }
         }
-        this.bagLetters = bag
+        // FIXME: Handle finishing game
+        // if(remainingLetters == [])
+        // {
+        //     this.bagLetters = null;  
+        // }
+        this.bagLetters = bag;
         return res;
     }
 
@@ -121,7 +142,7 @@ class Board extends React.Component {
         }
         var left = backup[backup.length - 1][2] - 1;
         if (typeof squares[left] == 'undefined' || squares[left][0] != null || left % 15 === 14) {
-            while (typeof squares[left] != 'undefined' && squares[left][0] != null) {
+            while (typeof squares[left] != 'undefined' && squares[left][0] != null && left % 15 !== 14) {
                 left -= 1;
             }
             if (left < 0 || (left % 15) === 14)
@@ -129,7 +150,7 @@ class Board extends React.Component {
         }
         var right = backup[backup.length - 1][2] + 1;
         if (typeof squares[right] == 'undefined' || squares[right][0] != null || right % 15 === 0) {
-            while (typeof squares[right] != 'undefined' && squares[right][0] != null) {
+            while (typeof squares[right] != 'undefined' && squares[right][0] != null && right % 15 !== 0) {
                 right += 1;
             }
             if ((right % 15) === 0)
@@ -176,9 +197,9 @@ class Board extends React.Component {
                         allAvailableSquares.push(top);
                     if (typeof squares[bot] != 'undefined' && squares[bot][0] == null)
                         allAvailableSquares.push(bot);
-                    if (typeof squares[left] != 'undefined' && squares[left][0] == null)
+                    if (typeof squares[left] != 'undefined' && squares[left][0] == null && left % 15 !== 14)
                         allAvailableSquares.push(left);
-                    if (typeof squares[right] != 'undefined' && squares[right][0] == null)
+                    if (typeof squares[right] != 'undefined' && squares[right][0] == null && right % 15 !== 0)
                         allAvailableSquares.push(right);
                 }
             }
@@ -228,7 +249,6 @@ class Board extends React.Component {
      */
     onClickEmptyHandler = (id, bonus_letter, bonus_word) => {
         // remove from player's hand
-        // if(this.state.player1Letters.includes())
         var nextMoveLegal = false;
         Object.keys(this.state.validSquares).forEach((key) => {
             if (id === this.state.validSquares[key])
@@ -251,30 +271,23 @@ class Board extends React.Component {
                 backup: backup,
                 allAvailableSquares: []
             })
-            var playercopy = this.state.player1Letters.slice();
-            var removeFromPlayer1 = true
+            var playercopy = this.state.playerLetters.slice();
             var selected = [this.state.selectedLetter[1], parseInt(letter_id_number)] // parse id to match with player's letters
             var index = playerHas(playercopy, selected);
 
             // Check who has the letter & delete from his letters
             if (index < 0) {
-                playercopy = this.state.player2Letters.slice();
-                removeFromPlayer1 = false;
+                playercopy = this.state.playerLetters.slice();
                 index = playerHas(playercopy, selected);
             }
             playercopy.splice(index, 1);
 
             // Re render letters list
-            if (removeFromPlayer1) {
-                this.setState({
-                    player1Letters: playercopy
-                })
-            }
-            else {
-                this.setState({
-                    player2Letters: playercopy
-                })
-            }
+           
+            this.setState({
+                playerLetters: playercopy
+            })
+            
             this.renderSquare(id);
         }
     }
@@ -302,22 +315,24 @@ class Board extends React.Component {
     }
 
     // Get new Letters
-    refreshPlayer1Letters = () => {
-        if (this.state.player1Turn) {
-            var currentLetters = this.state.player1Letters.slice();
-            this.setState({
-                player1Letters: this.getRandomLetters(currentLetters)
-            });
-        }
-    }
-
-    refreshPlayer2Letters = () => {
-        if (!this.state.player1Turn) {
-            var currentLetters = this.state.player2Letters.slice();
-            this.setState({
-                player2Letters: this.getRandomLetters(currentLetters)
-            });
-        }
+    refreshPlayerLetters = () => {
+            var currentLetters = this.state.playerLetters.slice();
+            if (this.state.turn !== 0 || (this.state.turn === 0 && this.state.playerLetters.length !== 0)) {
+                this.setState({
+                    playeLetters: this.getRandomLetters(currentLetters),
+                    selectedLetter: null,
+                    backup: [],
+                    validSquares: { 'top': null, 'bot': null, 'left': null, 'right': null, 'first': null },
+                    turn: this.state.turn + 1,
+                    // isPlayerTurn: !this.state.isPlayerTurn
+                });
+                this.props.socket.emit("endTurn", this.state.squares, this.bagLetters, this.state.roomId, true);
+            }
+            else {
+                this.setState({
+                    playerLetters: this.getRandomLetters(currentLetters)
+                })
+            }
     }
 
     onClickLetterHandler = (id, letter) => {
@@ -334,30 +349,18 @@ class Board extends React.Component {
     onClickCancel = () => {
         var backup = this.state.backup;
         var squares = this.state.squares;
-        var playerLetters = this.state.player1Letters;
-        if (!this.state.player1Turn) {
-            playerLetters = this.state.player2Letters;
-        }
+        var playerLetters = this.state.playerLetters;
         for (var i = 0; i < backup.length; i++) {
             playerLetters.push([backup[i][0], backup[i][1]]);
             squares[backup[i][2]] = [null, null];
         }
-        if (this.state.player1Turn) {
-            this.setState({
-                player1Letters: playerLetters,
-                backup: [],
-                validSquares: {},
-                squares: squares
-            })
-        }
-        else {
-            this.setState({
-                player2Letters: playerLetters,
-                backup: [],
-                validSquares: {},
-                squares: squares
-            })
-        }
+        this.setState({
+            playerLetters: playerLetters,
+            backup: [],
+            validSquares: {},
+            squares: squares,
+
+        })
     }
 
     /**
@@ -515,81 +518,106 @@ class Board extends React.Component {
         return res;
     }
 
+
     /** 
      * Returns the word players has created with own letters
      */
-    getCreatedWord = () => {
+    getCreatedWord = async () => {
         var res = this.getAdjacentWords();
         var score = 0;
-        if(this.state.player1Turn)
-        {
-            score = this.state.scorePlayer1;
-        }
-        else
-            score = this.state.scorePlayer2;
+        score = this.state.scorePlayer;
+
+
+        var words = []; 
         for (var i = 0; i < res.length; i++) {
             var points = res[i][1];
-            // var word = res[i][0]; // USE LATER FOR VERIFICATION
+            if (res[i][0].length > 1)
+                words.push(res[i][0]); 
             score += points
-            
         }
-        if (this.state.player1Turn){
-            this.setState({
-                scorePlayer1: score
-            })
-        }
-        else
-        {
-            this.setState({
-                scorePlayer2: score
-            }) 
-        }
-        // FIXME : Add verification from a dictionnary
-    }
 
-    // ADD verification
-    onClickEndTurn = () => {
-        this.getCreatedWord();
-        this.setState({
-            player1Turn: !this.state.player1Turn,
-            selectedLetter: null,
-            backup: [],
-            validSquares: { 'top': null, 'bot': null, 'left': null, 'right': null, 'first': null },
-            turn: this.state.turn + 1
+        const checkValid = new Promise(resolve => {
+            this.props.socket.emit('checkWords', words, (res) => {
+                resolve(res);
+            });
+        })
+
+        return checkValid.then((isValid) => {
+            if (isValid["isValid"]) {
+                // Get new letters if scrabble , adds extra  50 points
+                if (this.state.backup.length === 7)
+                    score += 50;
+
+                    // FIXME , Distinguish which player is playing
+                
+                this.props.socket.emit("newScore", this.props.socket.id, score, this.state.roomId)
+                var completedLetters = this.getRandomLetters(this.state.playerLetters, true)
+                this.setState({
+                    playerLetters: completedLetters,
+                    scorePlayer: score
+                })
+                return true;
+            }
+            else {
+                this.onClickCancel();
+                return false;
+            }
         })
     }
 
+    onClickEndTurn = async () => {
+        var isValid = await this.getCreatedWord();        
+        if(isValid)
+        {
+            this.setState({
+                selectedLetter: null,
+                backup: [],
+                validSquares: { 'top': null, 'bot': null, 'left': null, 'right': null, 'first': null },
+                turn: this.state.turn + 1,
+                // isPlayerTurn: !this.state.isPlayerTurn,
+            })
+            this.props.socket.emit("endTurn", this.state.squares, this.bagLetters, this.state.roomId);
+        }
+    }
+
+    newTurnListener = (data) =>{
+        this.bagLetters = data["letters"];
+        console.log("here");
+        this.setState({
+            isPlayerTurn: !this.state.isPlayerTurn,
+            scorePlayer: data[this.props.socket.id],
+            scoreOpponent: data[this.props.opponentId],
+            squares: data["board"]
+        })
+    }
 
     render() {
-        // var refreshButton = this.state.player1Turn ? <button onClick={this.refreshPlayer1Letters.bind(this)}>refresh 1</button>
-        //     : <button onClick={this.refreshPlayer2Letters.bind(this)}>refresh 2</button>;
-        var getLetters = this.state.player1Turn ? this.refreshPlayer1Letters.bind(this)
-            : this.refreshPlayer2Letters.bind(this);
-        var letters = this.state.player1Turn ? <div className="player-letters">
-            {this.state.player1Letters.map((value) => {
-
-                return <span key={"player1-" + this.bagLetters[value[0]] + value}>
+        var getLetters =  <button  id="getLettersButton" className="btn btn-outline-primary" onClick={this.refreshPlayerLetters.bind(this)}>Get Letters</button>
+        var playerLetters =  this.state.isPlayerTurn ? <div className="player-letters">
+            {this.state.playerLetters.map((value) => {
+                return <span key={"player-" + this.bagLetters[value[0]] + value}>
                     <Letter
-                        id={"player1-" + value[0] + '-' + value[1]}
+                        id={"player-" + value[0] + '-' + value[1]}
                         letter={value[0]}
                         onClickLetter={this.onClickLetterHandler}
                     />
                 </span>
             })}
-        </div>
-            : <div className="player-letters">
-                {this.state.player2Letters.map((value) => {
-                    return <span key={"player2-" + this.bagLetters[value[0]] + value}>
+        </div> :
+            <div className="player-letters">
+                {this.state.playerLetters.map((value) => {
+                    return <span key={"player-" + this.bagLetters[value[0]] + value}>
                         <Letter
-                            id={"player2-" + value[0] + '-' + value[1]}
+                            id={"player-" + value[0] + '-' + value[1]}
                             letter={value[0]}
-                            onClickLetter={this.onClickLetterHandler}
+                            disabled
                         />
                     </span>
                 })}
             </div>;
-        var endTurn = this.state.backup.length > 0 ? <button className="btn btn-outline-success" onClick={this.onClickEndTurn.bind(this)}>End turn</button> :
+        var endTurn = (this.state.backup.length > 0 && (this.state.turn > 0 || !this.state.playerTurn)) || (this.state.backup.length >= 2 && this.state.turn === 0) ? <button id="endTurnButton" className="btn btn-outline-success" onClick={this.onClickEndTurn.bind(this)}>End turn</button> :
             <button className="btn btn-outline-success" disabled>End turn</button>
+        var cancelTurn = <button id="cancelTurnButton" className="btn btn-outline-danger" onClick={this.onClickCancel.bind(this)}>Cancel</button>
         return (
             <div className="game-board">
                 <table>
@@ -887,16 +915,18 @@ class Board extends React.Component {
                         </tr>
                     </tbody>
                 </table>
-                {letters}
+                {playerLetters}
                 <div className="players-scores">
-                    <p>Player 1: {this.state.scorePlayer1}</p>
-                    <p>Player 2: {this.state.scorePlayer2}</p>
+                    <p>Player Name: {this.state.scorePlayer}</p>
+                    <p>Opponent: {this.state.scoreOpponent}</p>
                 </div>
-                
                 <Controls 
+                    newTurnListener={this.newTurnListener.bind(this)}
                     getLetters = {getLetters}
-                    cancelTurn={this.onClickCancel.bind(this)}
+                    cancelTurn={cancelTurn}
                     endTurn={endTurn}
+                    socket={this.props.socket}
+                    turn={this.state.turn}
                 />
             </div>
         )

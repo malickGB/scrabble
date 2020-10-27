@@ -1,17 +1,46 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import 'bootstrap/dist/css/bootstrap.min.css'
 import './controls.css'
 
-class Controls extends React.Component {
-    render(){    
-        return (
+function Controls(props) {
+    const [show, setShow] = useState(false);
+    const listener = props.newTurnListener;
+    
+    useEffect(() => {
+        var tmp = show;
+        props.socket.on("initPlayers", () => {
+            setShow(prevState => !prevState);
+            
+        });
+        props.socket.on("refreshScore", (data) => {
+            setShow(prevState => !prevState);
+            listener(data);
+        });
+        props.socket.on("disconnect", () => {
+            props.socket.disconnect();
+        })
+        
+    }, [props.socket]) 
+
+
+    if(show)
+    {
+        return (    
             <div className="controls">
-                <button className="btn btn-outline-primary" onClick={this.props.getLetters}>Get letters</button>
-                <button className="btn btn-outline-danger" onClick={this.props.cancelTurn}>Cancel</button>
-                {this.props.endTurn}
+                <span>
+                    {props.getLetters}
+                </span>
+                {props.cancelTurn}
+                <span>
+                    {props.endTurn}
+                </span>
             </div>
         )
     }
+    else{
+        return(<div className="controls"></div>)
+    }
+
 }
 
 export default Controls
