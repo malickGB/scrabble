@@ -4,12 +4,13 @@ const app = require('express')();
 const server = require('http').createServer(app);
 const io = require('socket.io')(server);
 const fs = require("fs");
-const { WSAECONNREFUSED } = require('constants');
-const { type } = require('os');
+
 const port = process.env.PORT || 8080;
 
 let rooms_data = [];
+var clients = []
 
+// Init words dictionnary
 let array_words = fs.readFileSync('./dico.txt', 'utf8').split('\n');
 let words_dict = {};
 array_words.forEach((word) => {
@@ -19,7 +20,24 @@ array_words.forEach((word) => {
         words_dict[word.length] = [word];
 })
 
+// Listen to events
 io.on("connection", (socket) =>{
+
+    clients.push(socket.id);
+    var available_rooms = () =>{
+        // Get all rooms where the player is waiting for opponent
+        all_rooms = Object.keys(io.sockets.adapter.rooms).filter((elm) =>{
+            let isSocketName = clients.includes(elm)
+            if(!isSocketName)
+            {
+                return io.sockets.adapter.rooms[elm]["length"] == 1;
+            }
+        })
+        return all_rooms;
+    }
+
+    socket.emit('AvailableRooms', available_rooms());
+
     socket.on('createRoom', (roomId) =>{
         socket.join(roomId);
         console.log("Player created room " + roomId);
@@ -38,6 +56,7 @@ io.on("connection", (socket) =>{
             if (io.sockets.adapter.rooms[roomId] && Object.keys(connectedSockets).length < 2){
                 console.log("Player joined room "+ roomId);
                 socket.join(roomId);
+                
                 var player1Id = Object.keys(connectedSockets)[0];
                 var player2Id = Object.keys(connectedSockets)[1];
 
@@ -99,7 +118,7 @@ io.on("connection", (socket) =>{
             socket.leave(room) ; 
 
             // notify remaining player that he is alone
-            io.to(room).emit('LeftGame'); // FIXME: do something with this event
+            io.to(room).emit('leftGame'); // FIXME: do something with this event
 
             // removes room from array
             rooms_data.splice(rooms_data.indexOf(room), 1) 

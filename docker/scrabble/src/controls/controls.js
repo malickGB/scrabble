@@ -20,6 +20,7 @@ function Controls(props) {
             props.socket.disconnect();
         })
         
+        props.socket.on("leftGame")
     }, [props.socket]) 
 
 

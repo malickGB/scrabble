@@ -324,7 +324,6 @@ class Board extends React.Component {
                     backup: [],
                     validSquares: { 'top': null, 'bot': null, 'left': null, 'right': null, 'first': null },
                     turn: this.state.turn + 1,
-                    // isPlayerTurn: !this.state.isPlayerTurn
                 });
                 this.props.socket.emit("endTurn", this.state.squares, this.bagLetters, this.state.roomId, true);
             }
@@ -574,7 +573,6 @@ class Board extends React.Component {
                 backup: [],
                 validSquares: { 'top': null, 'bot': null, 'left': null, 'right': null, 'first': null },
                 turn: this.state.turn + 1,
-                // isPlayerTurn: !this.state.isPlayerTurn,
             })
             this.props.socket.emit("endTurn", this.state.squares, this.bagLetters, this.state.roomId);
         }
@@ -582,7 +580,6 @@ class Board extends React.Component {
 
     newTurnListener = (data) =>{
         this.bagLetters = data["letters"];
-        console.log("here");
         this.setState({
             isPlayerTurn: !this.state.isPlayerTurn,
             scorePlayer: data[this.props.socket.id],
